@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Flashscapes</title>
+<style>
+:root{--bg:#1f6f5c;--tile:#f5e6c4;--ink:#2b2b2b;--hit:#ffd166}
+*{box-sizing:border-box;touch-action:none;user-select:none}
+body{margin:0;min-height:100vh;background:linear-gradient(#2a9d8f,#1f6f5c);font-family:system-ui,sans-serif;color:#fff;display:flex;flex-direction:column;align-items:center}
+header{display:flex;justify-content:space-between;width:100%;max-width:480px;padding:10px 16px;font-weight:700}
+#grid{display:grid;gap:3px;margin:8px 0;padding:8px;background:#0003;border-radius:10px}
+.c{width:var(--s);height:var(--s);border-radius:5px;background:transparent;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:calc(var(--s)*.6);color:var(--ink)}
+.c.on{background:var(--tile)}.c.hint{background:var(--hit)}
+#preview{height:44px;display:flex;gap:4px;align-items:center}
+#preview span{background:var(--tile);color:var(--ink);font-weight:700;padding:4px 10px;border-radius:6px;font-size:22px}
+#msg{height:20px;font-size:14px;opacity:.9}
+#wheel{position:relative;width:260px;height:260px;margin:6px auto;border-radius:50%;background:#fff;flex:none}
+#wheel canvas{position:absolute;inset:0;pointer-events:none}
+.l{position:absolute;width:56px;height:56px;margin:-28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:700;color:var(--ink);cursor:pointer}
+.l.sel{background:var(--ink);color:#fff}
+#bar{display:flex;gap:10px;margin:8px}
+button{background:#fff;color:var(--ink);border:0;border-radius:20px;padding:10px 16px;font-weight:700;font-size:15px;cursor:pointer}
+#win{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;font-size:28px;font-weight:700}
+</style>
+</head>
+<body>
+<header><span>Level <b id="lv"></b></span><span>🪙 <b id="coins"></b></span><span>Bonus <b id="bn"></b></span></header>
+<div id="grid"></div>
+<div id="preview"></div>
+<div id="msg"></div>
+<div id="wheel"><canvas width="260" height="260"></canvas></div>
+<div id="bar"><button id="shuf">Shuffle</button><button id="hint">Hint (10🪙)</button><button id="reset">Reset</button></div>
+<div id="win"><div>Level complete!</div><button id="next">Next level</button></div>
+<script src="levels.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const save = JSON.parse(localStorage.getItem('flashscapes') || '{"lv":0,"coins":20}');
+let done, L, cells, found, bonusFound, sel = [], letters, pos;
+const persist = () => localStorage.setItem('flashscapes', JSON.stringify(save));
+
+function load() {
+  L = LEVELS[Math.min(save.lv, LEVELS.length - 1)];
+  done = false; found = new Set(); bonusFound = new Set(); cells = {};
+  $('win').style.display = 'none';
+  const g = $('grid'); g.innerHTML = '';
+  const s = Math.min(46, Math.floor(Math.min(innerWidth - 40, 440) / L.w) - 3);
+  g.style.cssText = `grid-template-columns:repeat(${L.w},${s}px);--s:${s}px`;
+  g.style.setProperty('--s', s + 'px');
+  for (let r = 0; r < L.h; r++) for (let c = 0; c < L.w; c++) {
+    const d = document.createElement('div'); d.className = 'c'; g.appendChild(d); cells[r + ',' + c] = { d, ch: null };
+  }
+  for (const [w, r, c, v] of L.p) for (let i = 0; i < w.length; i++) cells[(r + (v ? i : 0)) + ',' + (c + (v ? 0 : i))].ch = w[i];
+  for (const k in cells) if (!cells[k].ch) cells[k].d.style.visibility = 'hidden';
+  letters = [...L.l]; buildWheel(); stats();
+}
+function stats() { $('lv').textContent = save.lv + 1; $('coins').textContent = save.coins; $('bn').textContent = bonusFound.size; }
+function show(k, cls) { const c = cells[k]; c.d.textContent = c.ch.toUpperCase(); c.d.classList.add('on'); if (cls) c.d.classList.add(cls); }
+
+function buildWheel() {
+  const w = $('wheel'); w.querySelectorAll('.l').forEach(e => e.remove());
+  pos = letters.map((ch, i) => {
+    const a = 2 * Math.PI * i / letters.length - Math.PI / 2;
+    const x = 130 + 92 * Math.cos(a), y = 130 + 92 * Math.sin(a);
+    const e = document.createElement('div'); e.className = 'l'; e.textContent = ch.toUpperCase();
+    e.style.left = x + 'px'; e.style.top = y + 'px'; w.appendChild(e);
+    return { x, y, e, ch };
+  });
+}
+function draw(p) {
+  const cv = $('wheel').querySelector('canvas').getContext('2d');
+  cv.clearRect(0, 0, 260, 260);
+  if (!sel.length) return;
+  cv.strokeStyle = '#2b2b2b'; cv.lineWidth = 8; cv.lineCap = cv.lineJoin = 'round'; cv.beginPath();
+  sel.forEach((i, n) => n ? cv.lineTo(pos[i].x, pos[i].y) : cv.moveTo(pos[i].x, pos[i].y));
+  if (p) cv.lineTo(p.x, p.y);
+  cv.stroke();
+}
+function preview() {
+  $('preview').innerHTML = sel.map(i => `<span>${pos[i].e.textContent}</span>`).join('');
+  pos.forEach((p, i) => p.e.classList.toggle('sel', sel.includes(i)));
+}
+function pt(ev) { const r = $('wheel').getBoundingClientRect(); return { x: ev.clientX - r.left, y: ev.clientY - r.top }; }
+function hit(p) { return pos.findIndex(q => Math.hypot(q.x - p.x, q.y - p.y) < 30); }
+
+const wheel = $('wheel');
+wheel.addEventListener('pointerdown', ev => { wheel.setPointerCapture(ev.pointerId); const i = hit(pt(ev)); sel = i < 0 ? [] : [i]; $('msg').textContent = ''; preview(); draw(pt(ev)); });
+wheel.addEventListener('pointermove', ev => {
+  if (!sel.length) return;
+  const p = pt(ev), i = hit(p);
+  if (i >= 0) {
+    if (sel.length > 1 && i === sel[sel.length - 2]) sel.pop();
+    else if (!sel.includes(i)) sel.push(i);
+  }
+  preview(); draw(p);
+});
+wheel.addEventListener('pointerup', () => { const w = sel.map(i => pos[i].ch).join(''); sel = []; preview(); draw(); if (w.length) submit(w); });
+
+function submit(w) {
+  const m = L.p.find(p => p[0] === w);
+  if (m) {
+    if (found.has(w)) return flash('Already found');
+    found.add(w);
+    for (let i = 0; i < w.length; i++) show((m[1] + (m[3] ? i : 0)) + ',' + (m[2] + (m[3] ? 0 : i)));
+    checkDone();
+  } else if (L.b.includes(w)) {
+    if (bonusFound.has(w)) return flash('Already found');
+    bonusFound.add(w); save.coins += 2; persist(); stats(); flash('Bonus word! +2🪙');
+  } else flash(w.length < 3 ? 'Too short' : 'Not a word');
+}
+function flash(t) { $('msg').textContent = t; }
+function win() { if (done) return; done = true; save.lv++; save.coins += 5; persist(); stats(); setTimeout(() => $('win').style.display = 'flex', 500); }
+
+$('shuf').onclick = () => { for (let i = letters.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [letters[i], letters[j]] = [letters[j], letters[i]]; } buildWheel(); };
+$('hint').onclick = () => {
+  const open = Object.keys(cells).filter(k => cells[k].ch && !cells[k].d.classList.contains('on'));
+  if (!open.length) return;
+  if (save.coins < 10) return flash('Need 10 coins');
+  save.coins -= 10; persist(); stats(); show(open[Math.floor(Math.random() * open.length)], 'hint');
+  checkDone();
+};
+function checkDone() { if (Object.keys(cells).every(k => !cells[k].ch || cells[k].d.classList.contains('on')) ) win(); }
+$('next').onclick = load;
+$('reset').onclick = () => { if (confirm('Reset all progress?')) { localStorage.removeItem('flashscapes'); location.reload(); } };
+load();
+</script>
+</body>
+</html>

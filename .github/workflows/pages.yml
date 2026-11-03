@@ -1,0 +1,17 @@
+name: Deploy Pages
+on:
+  push:
+    branches: [master]
+permissions:
+  pages: write
+  id-token: write
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: github-pages
+    steps:
+      - uses: actions/checkout@v4
+      - run: mkdir _site && cp index.html levels.js _site/
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: _site }
+      - uses: actions/deploy-pages@v4
