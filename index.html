@@ -2,26 +2,27 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#1f6f5c"><meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#14312e"><meta name="apple-mobile-web-app-capable" content="yes">
 <title>Flashscapes</title>
 <style>
-:root{--bg:#1f6f5c;--tile:#f5e6c4;--ink:#2b2b2b;--hit:#ffd166}
-*{box-sizing:border-box;touch-action:none;user-select:none}
-html,body{overscroll-behavior:none}body{margin:0;height:100vh;height:100dvh;overflow:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);-webkit-tap-highlight-color:transparent;background:linear-gradient(#2a9d8f,#1f6f5c);font-family:system-ui,sans-serif;color:#fff;display:flex;flex-direction:column;align-items:center}
+:root{color-scheme:dark light;--top:#14312e;--bot:#0b1a19;--tile:#e8d9b5;--ink:#1d1d1d;--hit:#e0a82e;--slot:#ffffff1a;--panel:#00000055;--wheel:#26302f;--wl:#e9eeee;--sel:#e8d9b5;--selink:#1d1d1d;--line:#e8d9b5;--btn:#2d3a39;--btnink:#e9eeee;--fg:#e9eeee}
+@media(prefers-color-scheme:light){:root{--top:#2a9d8f;--bot:#1f6f5c;--tile:#f5e6c4;--hit:#ffd166;--slot:#ffffff40;--panel:#0003;--wheel:#fff;--wl:#2b2b2b;--sel:#2b2b2b;--selink:#fff;--line:#2b2b2b;--btn:#fff;--btnink:#2b2b2b;--fg:#fff}}
+*{box-sizing:border-box;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+html,body{overscroll-behavior:none}body{margin:0;height:100vh;height:100dvh;overflow:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);-webkit-tap-highlight-color:transparent;background:linear-gradient(var(--top),var(--bot));font-family:system-ui,sans-serif;color:var(--fg);display:flex;flex-direction:column;align-items:center}
 header{display:flex;justify-content:space-between;width:100%;max-width:480px;padding:10px 16px;font-weight:700}
-#gridbox{flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center}#grid{display:grid;gap:3px;margin:8px 0;padding:8px;background:#0003;border-radius:10px}
-.c{width:var(--s);height:var(--s);border-radius:5px;background:#ffffff40;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:calc(var(--s)*.6);color:var(--ink)}
+#gridbox{flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center}#grid{display:grid;gap:3px;margin:8px 0;padding:8px;background:var(--panel);border-radius:10px}
+.c{width:var(--s);height:var(--s);border-radius:5px;background:var(--slot);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:calc(var(--s)*.6);color:var(--ink)}
 .c.on{background:var(--tile)}.c.hint{background:var(--hit)}
 #preview{height:44px;display:flex;gap:4px;align-items:center}
 #preview span{background:var(--tile);color:var(--ink);font-weight:700;padding:4px 10px;border-radius:6px;font-size:22px}
 #msg{height:20px;font-size:14px;opacity:.9}
-#wheel{position:relative;margin:6px auto;border-radius:50%;background:#fff;flex:none}
+#wheel{position:relative;margin:6px auto;border-radius:50%;background:var(--wheel);flex:none}
 #wheel canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-.l{position:absolute;width:var(--b);height:var(--b);margin:calc(var(--b)/-2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:calc(var(--b)*.55);font-weight:700;color:var(--ink);cursor:pointer}
-.l.sel{background:var(--ink);color:#fff}
+.l{position:absolute;width:var(--b);height:var(--b);margin:calc(var(--b)/-2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:calc(var(--b)*.55);font-weight:700;color:var(--wl);cursor:pointer}
+.l.sel{background:var(--sel);color:var(--selink)}
 #bar{display:flex;gap:10px;margin:6px 0 12px}
-button{background:#fff;color:var(--ink);border:0;border-radius:24px;min-height:44px;padding:0 18px;font-weight:700;font-size:15px;cursor:pointer}
-#win{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;font-size:28px;font-weight:700}
+button{background:var(--btn);color:var(--btnink);border:0;border-radius:24px;min-height:44px;padding:0 18px;font-weight:700;font-size:15px;cursor:pointer}
+#win{position:fixed;inset:0;background:#000c;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;font-size:28px;font-weight:700}
 </style>
 </head>
 <body>
@@ -34,10 +35,14 @@ button{background:#fff;color:var(--ink);border:0;border-radius:24px;min-height:4
 <div id="win"><div>Level complete!</div><button id="next">Next level</button></div>
 <script src="levels.js"></script>
 <script>
+addEventListener('contextmenu', e => e.preventDefault());
+addEventListener('selectstart', e => e.preventDefault());
 const $ = id => document.getElementById(id);
-const save = JSON.parse(localStorage.getItem('flashscapes') || '{"lv":0,"coins":20}');
+let save = { lv: 0, coins: 20 };
+try { save = { ...save, ...JSON.parse(localStorage.getItem('flashscapes')) }; } catch { }
+save.found ||= []; save.bonus ||= []; save.hints ||= [];
 let W, done, L, cells, found, bonusFound, sel = [], letters, pos;
-const persist = () => localStorage.setItem('flashscapes', JSON.stringify(save));
+const persist = () => { try { localStorage.setItem('flashscapes', JSON.stringify(save)); } catch { } };
 
 function load() {
   L = LEVELS[Math.min(save.lv, LEVELS.length - 1)];
@@ -50,8 +55,12 @@ function load() {
   }
   for (const [w, r, c, v] of L.p) for (let i = 0; i < w.length; i++) cells[(r + (v ? i : 0)) + ',' + (c + (v ? 0 : i))].ch = w[i];
   for (const k in cells) if (!cells[k].ch) cells[k].d.style.visibility = 'hidden';
-  letters = [...L.l]; buildWheel(); stats();
+  for (const w of save.found) { const m = L.p.find(p => p[0] === w); if (m) { found.add(w); reveal(m); } }
+  save.bonus.forEach(w => bonusFound.add(w));
+  save.hints.forEach(k => cells[k] && show(k, 'hint'));
+  letters = [...L.l]; buildWheel(); fit(); stats();
 }
+function reveal(m) { for (let i = 0; i < m[0].length; i++) show((m[1] + (m[3] ? i : 0)) + ',' + (m[2] + (m[3] ? 0 : i))); }
 function fit() {
   const bx = $('gridbox').getBoundingClientRect(), s = Math.max(14, Math.min(46, Math.floor((bx.width - 24) / L.w) - 3, Math.floor((bx.height - 24) / L.h) - 3));
   $('grid').style.setProperty('--s', s + 'px');
@@ -76,7 +85,7 @@ function draw(p) {
   const cv = $('wheel').querySelector('canvas').getContext('2d');
   cv.clearRect(0, 0, W, W);
   if (!sel.length) return;
-  cv.strokeStyle = '#2b2b2b'; cv.lineWidth = 8; cv.lineCap = cv.lineJoin = 'round'; cv.beginPath();
+  cv.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--line'); cv.lineWidth = 8; cv.lineCap = cv.lineJoin = 'round'; cv.beginPath();
   sel.forEach((i, n) => n ? cv.lineTo(pos[i].x, pos[i].y) : cv.moveTo(pos[i].x, pos[i].y));
   if (p) cv.lineTo(p.x, p.y);
   cv.stroke();
@@ -106,22 +115,21 @@ function submit(w) {
   if (m) {
     if (found.has(w)) return flash('Already found');
     found.add(w);
-    for (let i = 0; i < w.length; i++) show((m[1] + (m[3] ? i : 0)) + ',' + (m[2] + (m[3] ? 0 : i)));
-    checkDone();
+    reveal(m); save.found.push(w); persist(); checkDone();
   } else if (L.b.includes(w)) {
     if (bonusFound.has(w)) return flash('Already found');
-    bonusFound.add(w); save.coins += 2; persist(); stats(); flash('Bonus word! +2🪙');
+    bonusFound.add(w); save.bonus.push(w); save.coins += 2; persist(); stats(); flash('Bonus word! +2🪙');
   } else flash(w.length < 3 ? 'Too short' : 'Not a word');
 }
 function flash(t) { $('msg').textContent = t; }
-function win() { if (done) return; done = true; save.lv++; save.coins += 5; persist(); stats(); setTimeout(() => $('win').style.display = 'flex', 500); }
+function win() { if (done) return; done = true; save.lv++; save.coins += 5; save.found = []; save.bonus = []; save.hints = []; persist(); stats(); setTimeout(() => $('win').style.display = 'flex', 500); }
 
 $('shuf').onclick = () => { for (let i = letters.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [letters[i], letters[j]] = [letters[j], letters[i]]; } buildWheel(); };
 $('hint').onclick = () => {
   const open = Object.keys(cells).filter(k => cells[k].ch && !cells[k].d.classList.contains('on'));
   if (!open.length) return;
   if (save.coins < 10) return flash('Need 10 coins');
-  save.coins -= 10; persist(); stats(); show(open[Math.floor(Math.random() * open.length)], 'hint');
+  save.coins -= 10; persist(); stats(); { const k = open[Math.floor(Math.random() * open.length)]; save.hints.push(k); persist(); show(k, 'hint'); }
   checkDone();
 };
 function checkDone() { if (Object.keys(cells).every(k => !cells[k].ch || cells[k].d.classList.contains('on')) ) win(); }
