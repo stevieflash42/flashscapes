@@ -15,7 +15,7 @@ header{display:flex;align-items:center;justify-content:space-between;width:100%;
 .c.on{background:var(--tile)}.c.hint{background:var(--hit)}
 #pm{height:38px;flex:none;position:relative;display:flex;justify-content:center;align-items:center}#preview{display:flex;gap:4px;align-items:center}#preview:not(:empty)+#msg{display:none}
 #preview span{background:var(--tile);color:var(--ink);font-weight:700;padding:2px 9px;border-radius:6px;font-size:20px}
-#msg{font-size:14px;opacity:.9;text-align:center}
+#msg{font-size:14px;opacity:.9;text-align:center}.bonus{display:inline-block;background:var(--hit);color:#1d1d1d;font-weight:800;font-size:17px;letter-spacing:.5px;padding:7px 16px;border-radius:18px;box-shadow:0 0 14px var(--hit)}#bonusb b,#coins{display:inline-block}
 #wheel{touch-action:none;position:relative;margin:6px auto;border-radius:50%;background:var(--wheel);flex:none}
 #wheel canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .l{position:absolute;width:var(--b);height:var(--b);margin:calc(var(--b)/-2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:calc(var(--b)*.55);font-weight:700;color:var(--wl);cursor:pointer}
@@ -158,7 +158,7 @@ function submit(w, idxs) {
     save.found.push(w); persist(); fly(m, idxs);
   } else if (w.length >= 3 && DICT.has(w) && fitsWheel(w)) {
     if (bonusFound.has(w)) return flash('Already found');
-    bonusFound.add(w); save.bonus.push(w); save.coins += 2; persist(); stats(); flash('Bonus word! +2🪙');
+    bonusFound.add(w); save.bonus.push(w); save.coins += 2; persist(); stats(); bonusFx(w);
   } else flash(w.length < 3 ? 'Too short' : 'Not a word');
 }
 function fitsWheel(w) { const c = {}; for (const ch of L.l) c[ch] = (c[ch] || 0) + 1; for (const ch of w) if (!c[ch]--) return false; return true; }
@@ -203,6 +203,13 @@ $('bonusb').onclick = () => {
 };
 const animLabel = () => $('anim').textContent = 'Motion: ' + (animOn() ? 'On' : 'Off');
 $('def').onclick = () => $('def').style.display = 'none';
+function bonusFx(w) {
+  $('msg').innerHTML = `<span class="bonus">★ BONUS ★ ${w.toUpperCase()} +2🪙</span>`;
+  if (animOn()) {
+    $('msg').firstChild.animate([{ transform: 'scale(.5)', opacity: 0 }, { transform: 'scale(1.2)', opacity: 1, offset: .6 }, { transform: 'scale(1)' }], { duration: 350, easing: 'ease-out' });
+    for (const id of ['bonusb', 'coins']) $(id).animate([{ transform: 'scale(1)' }, { transform: 'scale(1.25)', color: '#ffd166' }, { transform: 'scale(1)' }], { duration: 600 });
+  }
+}
 function flash(t) { $('msg').textContent = t; }
 function win() { if (done) return; done = true; save.hist.unshift({ lv: save.lv + 1, w: L.p.map((q) => q[0]), b: [...bonusFound] }); save.hist.length = Math.min(save.hist.length, 5); save.lv++; save.coins += 5; save.found = []; save.bonus = []; save.hints = []; persist(); stats(); setTimeout(() => $('win').style.display = 'flex', 500); }
 
