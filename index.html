@@ -216,10 +216,15 @@ $('shuf').onclick = () => {
   letters = perm.map(i => letters[i]); buildWheel();
   if (animOn()) pos.forEach((p, j) => p.e.animate([{ transform: `translate(${old[perm[j]].x - p.x}px,${old[perm[j]].y - p.y}px)` }, { transform: 'none' }], { duration: 250, easing: 'ease-in-out' }));
 };
+const hintLabel = $('hint').textContent;
+let armed = 0;
+const disarm = () => { clearTimeout(armed); armed = 0; $('hint').textContent = hintLabel; };
 $('hint').onclick = () => {
   const open = Object.keys(cells).filter(k => cells[k].ch && !cells[k].d.classList.contains('on'));
   if (!open.length) return;
   if (save.coins < 10) return flash('Need 10 coins');
+  if (!armed) { $('hint').textContent = 'Tap again to confirm'; armed = setTimeout(disarm, 2500); return; }
+  disarm();
   save.coins -= 10; persist(); stats(); { const k = open[Math.floor(Math.random() * open.length)]; save.hints.push(k); persist(); show(k, 'hint'); }
   checkDone();
 };
