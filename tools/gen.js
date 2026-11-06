@@ -65,7 +65,7 @@ const poolOf = (s) => { const c = vec(s); return GW.filter(([, v]) => { for (let
 const pools = new Map(); // lazy
 const getPool = (s) => pools.get(s) || (pools.set(s, poolOf(s)), pools.get(s));
 
-const MIN = { 3: 2, 4: 4, 5: 5, 6: 5, 7: 5 }, K = { 3: 4, 4: 6, 5: 8, 6: 10, 7: 12 };
+const MIN = { 3: 3, 4: 5, 5: 6, 6: 7, 7: 7 }, K = { 3: 4, 4: 6, 5: 8, 6: 10, 7: 12 };
 const rej = {}, TOTAL = 6000, usage = new Map(), last = new Map(), levels = [];
 const COOL = 400; // a word isn't repeated within this many levels while alternatives exist
 const pen = (w, i) => (usage.get(w) || 0) * 100 + (i - (last.get(w) ?? -1e9) < COOL ? 1000 : 0);
