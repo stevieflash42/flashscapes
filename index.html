@@ -22,7 +22,7 @@ header{display:flex;align-items:center;justify-content:space-between;width:100%;
 .l.sel{background:var(--sel);color:var(--selink)}
 #bar{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:6px 8px 12px}#bar button{padding:0 14px;font-size:14px}
 button{background:var(--btn);color:var(--btnink);border:0;border-radius:24px;min-height:44px;padding:0 18px;font-weight:700;font-size:15px;cursor:pointer}
-#def,#hist{position:fixed;inset:0;background:#000c;display:none;align-items:center;justify-content:center;padding:24px;z-index:2}#def{z-index:4}#def>div,#hist>div{background:var(--wheel);color:var(--wl);border-radius:14px;padding:18px 20px;max-width:420px;max-height:80vh;overflow:auto;font-size:15px;line-height:1.4;-webkit-user-select:none}#def h3{margin:0 0 6px;font-size:22px}#def i{opacity:.7}#def p{margin:6px 0}#def a{color:inherit}.c.on{cursor:pointer}.lnk{background:none;color:inherit;font:inherit;padding:0 4px;min-height:44px;border-radius:0;text-decoration:underline dotted;text-underline-offset:4px}#hist{display:none}#hist h3{font-size:16px;margin:12px 0 4px}.chip{display:inline-block;margin:3px;padding:6px 12px;border-radius:16px;background:var(--btn);color:var(--btnink);cursor:pointer;font-weight:600;border:1px solid #8884}.chip.b{border-style:dashed}
+#def,#hist{position:fixed;inset:0;background:#000c;display:none;align-items:center;justify-content:center;padding:24px;z-index:2}#def{z-index:4}#def>div,#hist>div{background:var(--wheel);color:var(--wl);border-radius:14px;padding:18px 20px;max-width:420px;max-height:80vh;overflow:auto;font-size:15px;line-height:1.4;-webkit-user-select:none}#def h3{margin:0 0 6px;font-size:22px}#def i{opacity:.7}#def p{margin:6px 0}#def a{color:inherit}textarea{-webkit-user-select:text;user-select:text;font-size:16px;background:var(--btn);color:var(--btnink);border:1px solid #8884;border-radius:8px;padding:8px;word-break:break-all}.c.on{cursor:pointer}.lnk{background:none;color:inherit;font:inherit;padding:0 4px;min-height:44px;border-radius:0;text-decoration:underline dotted;text-underline-offset:4px}#hist{display:none}#hist h3{font-size:16px;margin:12px 0 4px}.chip{display:inline-block;margin:3px;padding:6px 12px;border-radius:16px;background:var(--btn);color:var(--btnink);cursor:pointer;font-weight:600;border:1px solid #8884}.chip.b{border-style:dashed}
 #win{position:fixed;inset:0;background:#000c;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;font-size:28px;font-weight:700}
 </style>
 </head>
@@ -32,7 +32,7 @@ button{background:var(--btn);color:var(--btnink);border:0;border-radius:24px;min
 <div id="preview"></div>
 <div id="msg"></div>
 <div id="wheel"><canvas></canvas></div>
-<div id="bar"><button id="shuf">Shuffle</button><button id="hint">Hint (10🪙)</button><button id="histb">Words</button><button id="anim"></button><button id="reset">Reset</button></div>
+<div id="bar"><button id="shuf">Shuffle</button><button id="hint">Hint (10🪙)</button><button id="histb">Words</button><button id="anim"></button><button id="datab">Backup</button></div>
 <div id="hist"><div></div></div>
 <div id="def"><div></div></div>
 <div id="win"><div>Level complete!</div><button id="winhist">Words</button><button id="next">Next level</button></div>
@@ -48,8 +48,9 @@ async function checkUpdate() {
 }
 checkUpdate();
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); });
-addEventListener('contextmenu', e => e.preventDefault());
-addEventListener('selectstart', e => e.preventDefault());
+const free = (e) => e.target.tagName === 'TEXTAREA';
+addEventListener('contextmenu', (e) => free(e) || e.preventDefault());
+addEventListener('selectstart', (e) => free(e) || e.preventDefault());
 addEventListener('gesturestart', e => e.preventDefault());
 let lastTap = 0;
 addEventListener('touchend', e => { const n = Date.now(); if (n - lastTap < 350) e.preventDefault(); lastTap = n; }, { passive: false });
@@ -190,13 +191,13 @@ $('grid').addEventListener('click', (ev) => {
   const ws = (cells[Math.floor(i / L.w) + ',' + (i % L.w)].words || []).filter((w) => found.has(w));
   if (ws.length) showDef(ws);
 });
-const chips = (a, c) => a.map((w) => `<span class="chip ${c}" data-w="${w}">${w}</span>`).join('');
+const chips = (a, c) => a.filter((w) => /^[a-z]{3,7}$/.test(w)).map((w) => `<span class="chip ${c}" data-w="${w}">${w}</span>`).join('');
 function showHist() {
   const groups = [...(done || !(found.size + bonusFound.size) ? [] : [{ lv: save.lv + 1, w: [...found], b: [...bonusFound], cur: 1 }]), ...save.hist];
   $('hist').firstElementChild.innerHTML = groups.length ? groups.map((g) => `<h3>Level ${g.lv}${g.cur ? ' (current)' : ''}</h3>${chips(g.w, '')}${chips(g.b, 'b')}`).join('') + '<p><i>Dashed = bonus words. Tap a word for its definition.</i></p>' : '<p>No words yet.</p>';
   $('hist').style.display = 'flex';
 }
-$('hist').onclick = (ev) => { const w = ev.target.dataset.w; if (w) showDef([w]); else $('hist').style.display = 'none'; };
+$('hist').onclick = (ev) => { const w = ev.target.dataset.w; if (w) showDef([w]); else if (ev.target === $('hist')) $('hist').style.display = 'none'; };
 $('bonusb').onclick = () => {
   $('hist').firstElementChild.innerHTML = bonusFound.size ? `<h3>Bonus words, level ${save.lv + (done ? 0 : 1)}</h3>${chips([...bonusFound], 'b')}<p><i>Tap a word for its definition.</i></p>` : '<p>No bonus words found on this level yet.</p>';
   $('hist').style.display = 'flex';
@@ -224,7 +225,23 @@ $('hint').onclick = () => {
 };
 function checkDone() { if (Object.keys(cells).every(k => !cells[k].ch || cells[k].d.classList.contains('on')) ) win(); }
 $('next').onclick = load;
-$('reset').onclick = () => { if (confirm('Reset all progress?')) { localStorage.removeItem('flashscapes'); location.reload(); } };
+$('datab').onclick = () => {
+  $('hist').firstElementChild.innerHTML = '<h3>Progress backup</h3><p>Safari and the home-screen app keep separate saves. Copy the code here, paste it into the other one, and tap Load.</p><textarea id="code" rows="5" style="width:100%"></textarea><p><button id="copy">Copy</button> <button id="load">Load</button> <button id="wipe">Reset all</button> <button id="shut">Close</button></p><p id="dmsg"></p>';
+  $('code').value = 'FS1:' + btoa(JSON.stringify(save));
+  const msg = (t) => $('dmsg').textContent = t;
+  $('copy').onclick = async () => { try { await navigator.clipboard.writeText($('code').value); msg('Copied.'); } catch { $('code').select(); msg('Select the code and copy it.'); } };
+  $('load').onclick = () => {
+    try {
+      const o = JSON.parse(atob($('code').value.trim().replace(/^FS1:/, '')));
+      if (!Number.isInteger(o.lv) || o.lv < 0 || typeof o.coins !== 'number') throw 0;
+      for (const k of ['found', 'bonus', 'hints', 'hist']) if (!Array.isArray(o[k])) o[k] = [];
+      localStorage.setItem('flashscapes', JSON.stringify(o)); location.reload();
+    } catch { msg('Invalid code.'); }
+  };
+  $('wipe').onclick = () => { if (confirm('Reset all progress?')) { localStorage.removeItem('flashscapes'); location.reload(); } };
+  $('shut').onclick = () => $('hist').style.display = 'none';
+  $('hist').style.display = 'flex';
+};
 addEventListener('resize', () => { if (!sel.length) { buildWheel(); fit(); } });
 load();
 </script>
