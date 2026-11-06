@@ -9,13 +9,13 @@
 @media(prefers-color-scheme:light){:root{--top:#2a9d8f;--bot:#1f6f5c;--tile:#f5e6c4;--hit:#ffd166;--slot:#ffffff40;--panel:#0003;--wheel:#fff;--wl:#2b2b2b;--sel:#2b2b2b;--selink:#fff;--line:#2b2b2b;--btn:#fff;--btnink:#2b2b2b;--fg:#fff}}
 *{box-sizing:border-box;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 html{background:var(--bot)}html,body{overscroll-behavior:none}body{margin:0;height:100vh;height:100dvh;overflow:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);-webkit-tap-highlight-color:transparent;background:linear-gradient(var(--top),var(--bot));font-family:system-ui,sans-serif;color:var(--fg);display:flex;flex-direction:column;align-items:center}
-header{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:480px;padding:10px 16px;font-weight:700}
+header{font-size:clamp(13px,4vw,17px);white-space:nowrap;display:flex;align-items:center;justify-content:space-between;width:100%;max-width:480px;padding:10px 16px;font-weight:700}
 #gridbox{flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center}#grid{display:grid;gap:3px;margin:8px 0;padding:8px;background:var(--panel);border-radius:10px}
 .c{width:var(--s);height:var(--s);border-radius:5px;background:var(--slot);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:calc(var(--s)*.6);color:var(--ink)}
 .c.on{background:var(--tile)}.c.hint{background:var(--hit)}
 #pm{height:38px;flex:none;position:relative;display:flex;justify-content:center;align-items:center}#preview{display:flex;gap:4px;align-items:center}#preview:not(:empty)+#msg{display:none}
 #preview span{background:var(--tile);color:var(--ink);font-weight:700;padding:2px 9px;border-radius:6px;font-size:20px}
-#msg{font-size:14px;opacity:.9;text-align:center}.bonus{display:inline-block;background:var(--hit);color:#1d1d1d;font-weight:800;font-size:17px;letter-spacing:.5px;padding:7px 16px;border-radius:18px;box-shadow:0 0 14px var(--hit)}#bonusb{transform-origin:right center}
+#msg{font-size:14px;opacity:.9;text-align:center}.bonus{display:inline-block;background:var(--hit);color:#1d1d1d;font-weight:800;font-size:17px;letter-spacing:.5px;padding:7px 16px;border-radius:18px;box-shadow:0 0 14px var(--hit)}#hint{transform-origin:right center;min-height:38px;padding:0 clamp(8px,3vw,14px);font-size:.95em;white-space:nowrap}
 #wheel{touch-action:none;position:relative;margin:6px auto;border-radius:50%;background:var(--wheel);flex:none}
 #wheel canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .l{position:absolute;width:var(--b);height:var(--b);margin:calc(var(--b)/-2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:calc(var(--b)*.55);font-weight:700;color:var(--wl);cursor:pointer}
@@ -27,11 +27,11 @@ button{background:var(--btn);color:var(--btnink);border:0;border-radius:24px;min
 </style>
 </head>
 <body>
-<header><span>Level <b id="lv"></b></span><button class="lnk" id="bonusb">🪙 <b id="coins"></b> · ★ <b id="bn"></b> bonus</button></header>
+<header><span>Level <b id="lv"></b></span><button class="lnk" id="bonusb">★ <b id="bn"></b> bonus</button><button id="hint"><span id="hl">💡 Hint</span> · 🪙 <b id="coins"></b></button></header>
 <div id="gridbox"><div id="grid"></div></div>
 <div id="pm"><div id="preview"></div><div id="msg"></div></div>
 <div id="wheel"><canvas></canvas></div>
-<div id="bar"><button id="shuf">Shuffle</button><button id="hint">Hint (10🪙)</button><button id="menub">☰ Menu</button></div>
+<div id="bar"><button id="shuf">Shuffle</button><button id="menub">☰ Menu</button></div>
 <div id="hist"><div></div></div>
 <div id="def"><div></div></div>
 <div id="win"><div>Level complete!</div><button id="next">Next level</button></div>
@@ -207,7 +207,7 @@ function bonusFx(w) {
   $('msg').innerHTML = `<span class="bonus">★ BONUS ★ ${w.toUpperCase()} +2🪙</span>`;
   if (animOn()) {
     $('msg').firstChild.animate([{ transform: 'scale(.5)', opacity: 0 }, { transform: 'scale(1.2)', opacity: 1, offset: .6 }, { transform: 'scale(1)' }], { duration: 350, easing: 'ease-out' });
-    $('bonusb').animate([{ transform: 'scale(1)' }, { transform: 'scale(1.25)', color: '#ffd166' }, { transform: 'scale(1)' }], { duration: 600 });
+    for (const id of ['bonusb', 'hint']) $(id).animate([{ transform: 'scale(1)' }, { transform: 'scale(1.1)', color: '#ffd166' }, { transform: 'scale(1)' }], { duration: 600 });
   }
 }
 function flash(t) { $('msg').textContent = t; }
@@ -219,14 +219,14 @@ $('shuf').onclick = () => {
   letters = perm.map(i => letters[i]); buildWheel();
   if (animOn()) pos.forEach((p, j) => p.e.animate([{ transform: `translate(${old[perm[j]].x - p.x}px,${old[perm[j]].y - p.y}px)` }, { transform: 'none' }], { duration: 250, easing: 'ease-in-out' }));
 };
-const hintLabel = $('hint').textContent;
+const hintLabel = $('hl').textContent;
 let armed = 0;
-const disarm = () => { clearTimeout(armed); armed = 0; $('hint').textContent = hintLabel; };
+const disarm = () => { clearTimeout(armed); armed = 0; $('hl').textContent = hintLabel; };
 $('hint').onclick = () => {
   const open = Object.keys(cells).filter(k => cells[k].ch && !cells[k].d.classList.contains('on'));
   if (!open.length) return;
   if (save.coins < 10) return flash('Need 10 coins');
-  if (!armed) { $('hint').textContent = 'Tap again to confirm'; armed = setTimeout(disarm, 2500); return; }
+  if (!armed) { $('hl').textContent = 'Spend 10?'; armed = setTimeout(disarm, 2500); return; }
   disarm();
   save.coins -= 10; persist(); stats(); { const k = open[Math.floor(Math.random() * open.length)]; save.hints.push(k); persist(); show(k, 'hint'); }
   checkDone();
