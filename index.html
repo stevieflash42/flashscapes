@@ -149,9 +149,19 @@ function submit(w, idxs) {
 }
 function fitsWheel(w) { const c = {}; for (const ch of L.l) c[ch] = (c[ch] || 0) + 1; for (const ch of w) if (!c[ch]--) return false; return true; }
 const defs = {};
+const html = (t) => new DOMParser().parseFromString(t, 'text/html').body.textContent;
+const row = (pos, d) => `<p><i>${pos}</i> ${d}</p>`;
+const sources = [
+  (w) => fetch('https://api.dictionaryapi.dev/v2/entries/en/' + w).then((r) => r.ok ? r.json() : Promise.reject()).then((j) => j[0].meanings.slice(0, 3).map((m) => row(m.partOfSpeech, m.definitions[0].definition)).join('')),
+  (w) => fetch('https://en.wiktionary.org/api/rest_v1/page/definition/' + w).then((r) => r.ok ? r.json() : Promise.reject()).then((j) => j.en.slice(0, 3).map((m) => row(m.partOfSpeech, html(m.definitions[0].definition))).join('')),
+];
 async function lookup(w) {
   if (!defs[w]) {
-    defs[w] = fetch('https://api.dictionaryapi.dev/v2/entries/en/' + w).then((r) => r.ok ? r.json() : Promise.reject()).then((j) => j[0].meanings.slice(0, 3).map((m) => `<p><i>${m.partOfSpeech}</i> ${m.definitions[0].definition}</p>`).join('')).catch(() => { delete defs[w]; return `<p>No definition found. <a href="https://en.wiktionary.org/wiki/${w}" target="_blank" rel="noopener">Wiktionary</a></p>`; });
+    defs[w] = (async () => {
+      for (const src of sources) { try { const t = await src(w); if (t) return t; } catch { } }
+      delete defs[w];
+      return `<p>No definition found. <a href="https://en.wiktionary.org/wiki/${w}" target="_blank" rel="noopener">Wiktionary</a></p>`;
+    })();
   }
   return defs[w];
 }

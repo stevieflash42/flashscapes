@@ -2,8 +2,20 @@
 const fs = require('fs');
 const dict = new Set(require('./dict.json'));
 const BLOCK = new Set('ass arse bitch bastard cock cum cunt damn dick fag fuck hell homo jizz nazi negro nigga nigger penis piss porn prick pussy rape rapist semen sex shit slut sperm tit tits turd twat vagina whore wank anal anus boob boobs butt crap dildo gay horny kike kill kills killed killer killing lesbian molest naked nude orgasm pedo retard sexy suck sucks tranny'.split(' '));
+// proper nouns: stems hunspell lists only capitalised (john, paris, ...)
+const stems = fs.readFileSync(__dirname + '/en.dic', 'utf8').split('\n').slice(1).map((l) => l.split('/')[0]);
+const lower = new Set(stems.filter((w) => w === w.toLowerCase()));
+const PROPER = new Set(stems.filter((w) => /^[A-Z]/.test(w)).map((w) => w.toLowerCase()).filter((w) => !lower.has(w)));
+const strip = (w) => { const c = [], e = (x) => w.endsWith(x), d = w[w.length - 2] === w[w.length - 3];
+  if (e('s')) c.push(w.slice(0, -1)); if (e('es')) c.push(w.slice(0, -2)); if (e('ies')) c.push(w.slice(0, -3) + 'y');
+  if (e('ed')) c.push(w.slice(0, -2), w.slice(0, -1), d ? w.slice(0, -3) : ''); if (e('ing')) c.push(w.slice(0, -3), w.slice(0, -3) + 'e', w[w.length - 4] === w[w.length - 5] ? w.slice(0, -4) : '');
+  if (e('er')) c.push(w.slice(0, -2), w.slice(0, -1)); if (e('est')) c.push(w.slice(0, -3), w.slice(0, -2)); if (e('ly')) c.push(w.slice(0, -2));
+  return c.some((x) => x.length > 2 && lower.has(x)); };
+const webList = new Set(fs.readFileSync(__dirname + '/freq.txt', 'utf8').split('\n').slice(0, 6000));
+// subtitle-list words (names, slang) only count if a dictionary stem backs them
+const solid = (w) => webList.has(w) || lower.has(w) || strip(w);
 const rank = new Map();
-const add = (words) => words.forEach((w) => { if (/^[a-z]{3,7}$/.test(w) && dict.has(w) && !BLOCK.has(w) && !rank.has(w)) rank.set(w, rank.size); });
+const add = (words) => words.forEach((w) => { if (/^[a-z]{3,7}$/.test(w) && dict.has(w) && !BLOCK.has(w) && !PROPER.has(w) && solid(w) && !rank.has(w)) rank.set(w, rank.size); });
 // interleave both frequency lists so rank ~ commonness in either
 const A = fs.readFileSync(__dirname + '/freq.txt', 'utf8').split('\n');
 const B = fs.readFileSync(__dirname + '/freq50k.txt', 'utf8').split('\n').map((l) => l.split(' ')[0]);
