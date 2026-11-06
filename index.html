@@ -285,11 +285,17 @@ function showBackup() {
   $('back').onclick = showMenu;
 }
 $('menub').onclick = showMenu;
+// iOS home-screen apps report a layout height that excludes the status-bar zone the page still draws under
+function sizeBody() {
+  const sh = Math.max(screen.width, screen.height), gap = sh - innerHeight, fix = navigator.standalone === true && innerHeight > innerWidth && gap > 0 && gap <= 60, st = document.body.style;
+  st.bottom = fix ? 'auto' : ''; st.height = fix ? sh + 'px' : '';
+}
 let lastH = 0;
-const relayout = () => { if (sel.length || document.body.clientHeight === lastH) return; lastH = document.body.clientHeight; buildWheel(); fit(); };
+const relayout = () => { sizeBody(); if (sel.length || document.body.clientHeight === lastH) return; lastH = document.body.clientHeight; buildWheel(); fit(); };
 addEventListener('resize', relayout);
 new ResizeObserver(relayout).observe(document.body);
 new ResizeObserver(fit).observe($('gridbox'));
+sizeBody();
 load();
 </script>
 </body>
