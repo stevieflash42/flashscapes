@@ -64,14 +64,12 @@ function load() {
   save.hints.forEach(k => cells[k] && show(k, 'hint'));
   letters = [...L.l]; buildWheel(); fit(); stats();
 }
-const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 function fly(m, idxs) {
   const snap = cells, [w, r0, c0, v] = m;
   let pending = 0;
   for (let i = 0; i < w.length; i++) {
     const k = (r0 + (v ? i : 0)) + ',' + (c0 + (v ? 0 : i)), c = snap[k];
     if (c.d.classList.contains('on')) continue;
-    if (reduced) { show(k); continue; }
     const t = c.d.getBoundingClientRect(), s = pos[idxs[i]].e.getBoundingClientRect(), f = document.createElement('div');
     f.className = 'c on';
     f.textContent = w[i].toUpperCase();
@@ -182,7 +180,7 @@ $('shuf').onclick = () => {
   const perm = letters.map((_, i) => i), old = pos.map(p => ({ x: p.x, y: p.y }));
   for (let i = perm.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [perm[i], perm[j]] = [perm[j], perm[i]]; }
   letters = perm.map(i => letters[i]); buildWheel();
-  if (!reduced) pos.forEach((p, j) => p.e.animate([{ transform: `translate(${old[perm[j]].x - p.x}px,${old[perm[j]].y - p.y}px)` }, { transform: 'none' }], { duration: 450, easing: 'ease-in-out' }));
+  pos.forEach((p, j) => p.e.animate([{ transform: `translate(${old[perm[j]].x - p.x}px,${old[perm[j]].y - p.y}px)` }, { transform: 'none' }], { duration: 450, easing: 'ease-in-out' }));
 };
 $('hint').onclick = () => {
   const open = Object.keys(cells).filter(k => cells[k].ch && !cells[k].d.classList.contains('on'));
