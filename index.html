@@ -111,8 +111,8 @@ function show(k, cls) { const c = cells[k]; c.d.textContent = c.ch.toUpperCase()
 function buildWheel() {
   const w = $('wheel'); w.querySelectorAll('.l').forEach(e => e.remove());
   const H = document.body.clientHeight, need = (L ? L.h : 8) * 36 + 24;
-  W = Math.max(170, Math.min(300, innerWidth - 48, H - 190 - need));
-  w.style.width = w.style.height = W + 'px'; w.style.setProperty('--b', Math.min(64, W / 4.2) + 'px');
+  W = Math.max(150, Math.min(260, innerWidth * .58, H - 190 - need));
+  w.style.width = w.style.height = W + 'px'; w.style.setProperty('--b', Math.min(72, W / 3.7) + 'px');
   const cvs = w.querySelector('canvas'), d = devicePixelRatio || 1; cvs.width = cvs.height = W * d; cvs.getContext('2d').setTransform(d, 0, 0, d, 0, 0);
   pos = letters.map((ch, i) => {
     const a = 2 * Math.PI * i / letters.length - Math.PI / 2;
@@ -136,7 +136,7 @@ function preview() {
   pos.forEach((p, i) => p.e.classList.toggle('sel', sel.includes(i)));
 }
 function pt(ev) { const r = $('wheel').getBoundingClientRect(); return { x: ev.clientX - r.left, y: ev.clientY - r.top }; }
-function hit(p) { return pos.findIndex(q => Math.hypot(q.x - p.x, q.y - p.y) < W * .13); }
+function hit(p) { return pos.findIndex(q => Math.hypot(q.x - p.x, q.y - p.y) < W * .15); }
 
 const wheel = $('wheel');
 wheel.addEventListener('pointerdown', ev => { wheel.setPointerCapture(ev.pointerId); const i = hit(pt(ev)); sel = i < 0 ? [] : [i]; $('msg').textContent = ''; preview(); draw(pt(ev)); });
