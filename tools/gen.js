@@ -14,15 +14,21 @@ const strip = (w) => { const c = [], e = (x) => w.endsWith(x), d = w[w.length - 
 const webList = new Set(fs.readFileSync(__dirname + '/freq.txt', 'utf8').split('\n').slice(0, 6000));
 // subtitle-list words (names, slang) only count if a dictionary stem backs them
 const solid = (w) => webList.has(w) || lower.has(w) || strip(w);
+// abbreviations, acronyms, clippings, interjections, informal contractions, stray proper nouns
+const ABBR = new Set('abs ads aka alt amp app asp ave bio biz bod bot cam cis cit col con cor cos def deg dev devel dis div doc emf eff gov guv hmm hon jun lac las lat lib mac mag max med meh mic mil mun pol pre rec ref reg rem rep res rev rho sec shh sim soc sri sur syn tel til twp vac var veg vol brr psst pix sou mam info pic promo prof stat tech spec tho thru gonna wanna gotta kinda sorta gimme dunno yeah nope yep yup yuk yow nah bah pah rah duh huh aah ooh oho ugh eek costa jews latinas shemale bukkake inkjet telecom schmuck gangsta wouldst wog wop gyp'.split(' '));
 const rank = new Map();
-const add = (words) => words.forEach((w) => { if (/^[a-z]{3,7}$/.test(w) && dict.has(w) && !BLOCK.has(w) && !PROPER.has(w) && solid(w) && !rank.has(w)) rank.set(w, rank.size); });
+const add = (words) => words.forEach((w) => { if (/^[a-z]{3,7}$/.test(w) && dict.has(w) && !BLOCK.has(w) && !ABBR.has(w) && !PROPER.has(w) && solid(w) && !rank.has(w)) rank.set(w, rank.size); });
 // interleave both frequency lists so rank ~ commonness in either
 const A = fs.readFileSync(__dirname + '/freq.txt', 'utf8').split('\n');
 const B = fs.readFileSync(__dirname + '/freq50k.txt', 'utf8').split('\n').map((l) => l.split(' ')[0]);
 const merged = []; for (let i = 0; i < Math.max(A.length, B.length); i++) { if (i < A.length) merged.push(A[i]); if (i < B.length) merged.push(B[i]); }
 add(merged);
 const all = [...rank.keys()];
-const GRID = new Set(all.slice(0, 16000));
+const cand = new Set(all.slice(0, 16000));
+// plural/-s forms stay valid as bonus words (DICT) but never go in the grid when their singular is a grid candidate
+const bases = (w) => /(ss|us|is)$/.test(w) ? [] : [w.endsWith('ies') && w.slice(0, -3) + 'y', w.endsWith('es') && w.slice(0, -2), w.endsWith('s') && w.slice(0, -1)].filter(Boolean);
+const GRID = new Set([...cand].filter((w) => !bases(w).some((b) => b.length >= 3 && cand.has(b))));
+console.log('grid vocab', GRID.size, 'of', cand.size);
 const key = (s) => [...s].sort().join('');
 const cnt = (w) => { const c = {}; for (const ch of w) c[ch] = (c[ch] || 0) + 1; return c; };
 const fits = (w, c) => { const u = cnt(w); return Object.keys(u).every((k) => u[k] <= (c[k] || 0)); };
