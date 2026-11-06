@@ -34,7 +34,7 @@ button{background:var(--btn);color:var(--btnink);border:0;border-radius:24px;min
 <div id="bar"><button id="shuf">Shuffle</button><button id="hint">Hint (10🪙)</button><button id="menub">☰ Menu</button></div>
 <div id="hist"><div></div></div>
 <div id="def"><div></div></div>
-<div id="win"><div>Level complete!</div><button id="winhist">Words</button><button id="next">Next level</button></div>
+<div id="win"><div>Level complete!</div><button id="next">Next level</button></div>
 <script src="levels.js?v=__V__"></script>
 <script>
 const V = '__V__';
@@ -201,7 +201,6 @@ $('bonusb').onclick = () => {
   $('hist').firstElementChild.innerHTML = bonusFound.size ? `<h3>Bonus words, level ${save.lv + (done ? 0 : 1)}</h3>${chips([...bonusFound], 'b')}<p><i>Tap a word for its definition.</i></p>` : '<p>No bonus words found on this level yet.</p>';
   $('hist').style.display = 'flex';
 };
-$('winhist').onclick = showHist;
 const animLabel = () => $('anim').textContent = 'Motion: ' + (animOn() ? 'On' : 'Off');
 $('def').onclick = () => $('def').style.display = 'none';
 function flash(t) { $('msg').textContent = t; }
