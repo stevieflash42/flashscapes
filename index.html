@@ -7,7 +7,7 @@
 <style>
 :root{color-scheme:dark light;--top:#14312e;--bot:#0b1a19;--tile:#e8d9b5;--ink:#1d1d1d;--hit:#e0a82e;--slot:#ffffff1a;--panel:#00000055;--wheel:#26302f;--wl:#e9eeee;--sel:#e8d9b5;--selink:#1d1d1d;--line:#e8d9b5;--btn:#2d3a39;--btnink:#e9eeee;--fg:#e9eeee}
 @media(prefers-color-scheme:light){:root{--top:#2a9d8f;--bot:#1f6f5c;--tile:#f5e6c4;--hit:#ffd166;--slot:#ffffff40;--panel:#0003;--wheel:#fff;--wl:#2b2b2b;--sel:#2b2b2b;--selink:#fff;--line:#2b2b2b;--btn:#fff;--btnink:#2b2b2b;--fg:#fff}}
-*{box-sizing:border-box;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+*{box-sizing:border-box;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 html{background:var(--bot)}html,body{overscroll-behavior:none}body{margin:0;height:100vh;height:100dvh;overflow:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);-webkit-tap-highlight-color:transparent;background:linear-gradient(var(--top),var(--bot));font-family:system-ui,sans-serif;color:var(--fg);display:flex;flex-direction:column;align-items:center}
 header{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:480px;padding:10px 16px;font-weight:700}
 #gridbox{flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center}#grid{display:grid;gap:3px;margin:8px 0;padding:8px;background:var(--panel);border-radius:10px}
@@ -16,7 +16,7 @@ header{display:flex;align-items:center;justify-content:space-between;width:100%;
 #preview{height:44px;display:flex;gap:4px;align-items:center}
 #preview span{background:var(--tile);color:var(--ink);font-weight:700;padding:4px 10px;border-radius:6px;font-size:22px}
 #msg{height:20px;font-size:14px;opacity:.9}
-#wheel{position:relative;margin:6px auto;border-radius:50%;background:var(--wheel);flex:none}
+#wheel{touch-action:none;position:relative;margin:6px auto;border-radius:50%;background:var(--wheel);flex:none}
 #wheel canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .l{position:absolute;width:var(--b);height:var(--b);margin:calc(var(--b)/-2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:calc(var(--b)*.55);font-weight:700;color:var(--wl);cursor:pointer}
 .l.sel{background:var(--sel);color:var(--selink)}
@@ -40,6 +40,9 @@ button{background:var(--btn);color:var(--btnink);border:0;border-radius:24px;min
 <script>
 addEventListener('contextmenu', e => e.preventDefault());
 addEventListener('selectstart', e => e.preventDefault());
+addEventListener('gesturestart', e => e.preventDefault());
+let lastTap = 0;
+addEventListener('touchend', e => { const n = Date.now(); if (n - lastTap < 350) e.preventDefault(); lastTap = n; }, { passive: false });
 const $ = id => document.getElementById(id);
 let save = { lv: 0, coins: 20 };
 try { save = { ...save, ...JSON.parse(localStorage.getItem('flashscapes')) }; } catch { }
