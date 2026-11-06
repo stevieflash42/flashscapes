@@ -45,7 +45,9 @@ let W, done, L, cells, found, bonusFound, sel = [], letters, pos;
 const persist = () => { try { localStorage.setItem('flashscapes', JSON.stringify(save)); } catch { } };
 
 function load() {
-  L = LEVELS[Math.min(save.lv, LEVELS.length - 1)];
+  const [l, ws] = LEVELS[save.lv % LEVELS.length].split(':');
+  const p = ws.split(',').map((x) => [x.slice(0, -3), +x[x.length - 3], +x[x.length - 2], +x[x.length - 1]]);
+  L = { l, p, h: Math.max(...p.map((q) => q[1] + (q[3] ? q[0].length : 1))), w: Math.max(...p.map((q) => q[2] + (q[3] ? 1 : q[0].length))) };
   done = false; found = new Set(); bonusFound = new Set(); cells = {};
   $('win').style.display = 'none';
   const g = $('grid'); g.innerHTML = '';
@@ -116,11 +118,12 @@ function submit(w) {
     if (found.has(w)) return flash('Already found');
     found.add(w);
     reveal(m); save.found.push(w); persist(); checkDone();
-  } else if (L.b.includes(w)) {
+  } else if (w.length >= 3 && DICT.has(w) && fitsWheel(w)) {
     if (bonusFound.has(w)) return flash('Already found');
     bonusFound.add(w); save.bonus.push(w); save.coins += 2; persist(); stats(); flash('Bonus word! +2🪙');
   } else flash(w.length < 3 ? 'Too short' : 'Not a word');
 }
+function fitsWheel(w) { const c = {}; for (const ch of L.l) c[ch] = (c[ch] || 0) + 1; for (const ch of w) if (!c[ch]--) return false; return true; }
 function flash(t) { $('msg').textContent = t; }
 function win() { if (done) return; done = true; save.lv++; save.coins += 5; save.found = []; save.bonus = []; save.hints = []; persist(); stats(); setTimeout(() => $('win').style.display = 'flex', 500); }
 
