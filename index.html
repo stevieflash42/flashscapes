@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#14312e"><meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#14312e"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Flashscapes"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-180.png">
 <title>Flashscapes</title>
 <style>
 :root{color-scheme:dark light;--top:#14312e;--bot:#0b1a19;--tile:#e8d9b5;--ink:#1d1d1d;--hit:#e0a82e;--slot:#ffffff1a;--panel:#00000055;--wheel:#26302f;--wl:#e9eeee;--sel:#e8d9b5;--selink:#1d1d1d;--line:#e8d9b5;--btn:#2d3a39;--btnink:#e9eeee;--fg:#e9eeee}
 @media(prefers-color-scheme:light){:root{--top:#2a9d8f;--bot:#1f6f5c;--tile:#f5e6c4;--hit:#ffd166;--slot:#ffffff40;--panel:#0003;--wheel:#fff;--wl:#2b2b2b;--sel:#2b2b2b;--selink:#fff;--line:#2b2b2b;--btn:#fff;--btnink:#2b2b2b;--fg:#fff}}
 *{box-sizing:border-box;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-html,body{overscroll-behavior:none}body{margin:0;height:100vh;height:100dvh;overflow:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);-webkit-tap-highlight-color:transparent;background:linear-gradient(var(--top),var(--bot));font-family:system-ui,sans-serif;color:var(--fg);display:flex;flex-direction:column;align-items:center}
-header{display:flex;justify-content:space-between;width:100%;max-width:480px;padding:10px 16px;font-weight:700}
+html{background:var(--bot)}html,body{overscroll-behavior:none}body{margin:0;height:100vh;height:100dvh;overflow:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);-webkit-tap-highlight-color:transparent;background:linear-gradient(var(--top),var(--bot));font-family:system-ui,sans-serif;color:var(--fg);display:flex;flex-direction:column;align-items:center}
+header{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:480px;padding:10px 16px;font-weight:700}
 #gridbox{flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center}#grid{display:grid;gap:3px;margin:8px 0;padding:8px;background:var(--panel);border-radius:10px}
 .c{width:var(--s);height:var(--s);border-radius:5px;background:var(--slot);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:calc(var(--s)*.6);color:var(--ink)}
 .c.on{background:var(--tile)}.c.hint{background:var(--hit)}
@@ -22,12 +22,12 @@ header{display:flex;justify-content:space-between;width:100%;max-width:480px;pad
 .l.sel{background:var(--sel);color:var(--selink)}
 #bar{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:6px 8px 12px}#bar button{padding:0 14px;font-size:14px}
 button{background:var(--btn);color:var(--btnink);border:0;border-radius:24px;min-height:44px;padding:0 18px;font-weight:700;font-size:15px;cursor:pointer}
-#def,#hist{position:fixed;inset:0;background:#000c;display:none;align-items:center;justify-content:center;padding:24px;z-index:2}#def{z-index:4}#def>div,#hist>div{background:var(--wheel);color:var(--wl);border-radius:14px;padding:18px 20px;max-width:420px;max-height:80vh;overflow:auto;font-size:15px;line-height:1.4;-webkit-user-select:none}#def h3{margin:0 0 6px;font-size:22px}#def i{opacity:.7}#def p{margin:6px 0}#def a{color:inherit}.c.on{cursor:pointer}#hist{display:none}#hist h3{font-size:16px;margin:12px 0 4px}.chip{display:inline-block;margin:3px;padding:6px 12px;border-radius:16px;background:var(--btn);color:var(--btnink);cursor:pointer;font-weight:600;border:1px solid #8884}.chip.b{border-style:dashed}
+#def,#hist{position:fixed;inset:0;background:#000c;display:none;align-items:center;justify-content:center;padding:24px;z-index:2}#def{z-index:4}#def>div,#hist>div{background:var(--wheel);color:var(--wl);border-radius:14px;padding:18px 20px;max-width:420px;max-height:80vh;overflow:auto;font-size:15px;line-height:1.4;-webkit-user-select:none}#def h3{margin:0 0 6px;font-size:22px}#def i{opacity:.7}#def p{margin:6px 0}#def a{color:inherit}.c.on{cursor:pointer}.lnk{background:none;color:inherit;font:inherit;padding:0 4px;min-height:44px;border-radius:0;text-decoration:underline dotted;text-underline-offset:4px}#hist{display:none}#hist h3{font-size:16px;margin:12px 0 4px}.chip{display:inline-block;margin:3px;padding:6px 12px;border-radius:16px;background:var(--btn);color:var(--btnink);cursor:pointer;font-weight:600;border:1px solid #8884}.chip.b{border-style:dashed}
 #win{position:fixed;inset:0;background:#000c;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;font-size:28px;font-weight:700}
 </style>
 </head>
 <body>
-<header><span>Level <b id="lv"></b></span><span>🪙 <b id="coins"></b></span><span>Bonus <b id="bn"></b></span></header>
+<header><span>Level <b id="lv"></b></span><span>🪙 <b id="coins"></b></span><button class="lnk" id="bonusb">Bonus <b id="bn"></b></button></header>
 <div id="gridbox"><div id="grid"></div></div>
 <div id="preview"></div>
 <div id="msg"></div>
@@ -177,13 +177,17 @@ $('grid').addEventListener('click', (ev) => {
   const ws = (cells[Math.floor(i / L.w) + ',' + (i % L.w)].words || []).filter((w) => found.has(w));
   if (ws.length) showDef(ws);
 });
+const chips = (a, c) => a.map((w) => `<span class="chip ${c}" data-w="${w}">${w}</span>`).join('');
 function showHist() {
   const groups = [...(done || !(found.size + bonusFound.size) ? [] : [{ lv: save.lv + 1, w: [...found], b: [...bonusFound], cur: 1 }]), ...save.hist];
-  const chips = (a, c) => a.map((w) => `<span class="chip ${c}" data-w="${w}">${w}</span>`).join('');
   $('hist').firstElementChild.innerHTML = groups.length ? groups.map((g) => `<h3>Level ${g.lv}${g.cur ? ' (current)' : ''}</h3>${chips(g.w, '')}${chips(g.b, 'b')}`).join('') + '<p><i>Dashed = bonus words. Tap a word for its definition.</i></p>' : '<p>No words yet.</p>';
   $('hist').style.display = 'flex';
 }
 $('hist').onclick = (ev) => { const w = ev.target.dataset.w; if (w) showDef([w]); else $('hist').style.display = 'none'; };
+$('bonusb').onclick = () => {
+  $('hist').firstElementChild.innerHTML = bonusFound.size ? `<h3>Bonus words, level ${save.lv + (done ? 0 : 1)}</h3>${chips([...bonusFound], 'b')}<p><i>Tap a word for its definition.</i></p>` : '<p>No bonus words found on this level yet.</p>';
+  $('hist').style.display = 'flex';
+};
 $('histb').onclick = $('winhist').onclick = showHist;
 const animLabel = () => $('anim').textContent = 'Motion: ' + (animOn() ? 'On' : 'Off');
 $('anim').onclick = () => { save.anim = !animOn(); persist(); animLabel(); };
@@ -196,7 +200,7 @@ $('shuf').onclick = () => {
   const perm = letters.map((_, i) => i), old = pos.map(p => ({ x: p.x, y: p.y }));
   for (let i = perm.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [perm[i], perm[j]] = [perm[j], perm[i]]; }
   letters = perm.map(i => letters[i]); buildWheel();
-  if (animOn()) pos.forEach((p, j) => p.e.animate([{ transform: `translate(${old[perm[j]].x - p.x}px,${old[perm[j]].y - p.y}px)` }, { transform: 'none' }], { duration: 250, easing: 'ease-in-out' }));
+  if (animOn()) pos.forEach((p, j) => p.e.animate([{ transform: `translate(${old[perm[j]].x - p.x}px,${old[perm[j]].y - p.y}px)` }, { transform: 'none' }], { duration: 130, easing: 'ease-out' }));
 };
 $('hint').onclick = () => {
   const open = Object.keys(cells).filter(k => cells[k].ch && !cells[k].d.classList.contains('on'));
