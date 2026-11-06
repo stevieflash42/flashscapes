@@ -8,7 +8,7 @@
 :root{color-scheme:dark light;--top:#14312e;--bot:#0b1a19;--tile:#e8d9b5;--ink:#1d1d1d;--hit:#e0a82e;--slot:#ffffff1a;--panel:#00000055;--wheel:#26302f;--wl:#e9eeee;--sel:#e8d9b5;--selink:#1d1d1d;--line:#e8d9b5;--btn:#2d3a39;--btnink:#e9eeee;--fg:#e9eeee}
 @media(prefers-color-scheme:light){:root{--top:#2a9d8f;--bot:#1f6f5c;--tile:#f5e6c4;--hit:#ffd166;--slot:#ffffff40;--panel:#0003;--wheel:#fff;--wl:#2b2b2b;--sel:#2b2b2b;--selink:#fff;--line:#2b2b2b;--btn:#fff;--btnink:#2b2b2b;--fg:#fff}}
 *{box-sizing:border-box;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-html{background:var(--bot)}html,body{overscroll-behavior:none}body{margin:0;height:100vh;height:100dvh;overflow:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);-webkit-tap-highlight-color:transparent;background:linear-gradient(var(--top),var(--bot));font-family:system-ui,sans-serif;color:var(--fg);display:flex;flex-direction:column;align-items:center}
+html{background:var(--bot)}html,body{overscroll-behavior:none}body{margin:0;position:fixed;inset:0;overflow:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);-webkit-tap-highlight-color:transparent;background:linear-gradient(var(--top),var(--bot));font-family:system-ui,sans-serif;color:var(--fg);display:flex;flex-direction:column;align-items:center}
 header{font-size:clamp(13px,4vw,17px);white-space:nowrap;display:flex;align-items:center;justify-content:space-between;width:100%;max-width:480px;padding:10px 16px;font-weight:700}
 #gridbox{flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center}#grid{display:grid;gap:3px;margin:8px 0;padding:8px;background:var(--panel);border-radius:10px}
 .c{width:var(--s);height:var(--s);border-radius:5px;background:var(--slot);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:calc(var(--s)*.6);color:var(--ink)}
@@ -110,7 +110,8 @@ function show(k, cls) { const c = cells[k]; c.d.textContent = c.ch.toUpperCase()
 
 function buildWheel() {
   const w = $('wheel'); w.querySelectorAll('.l').forEach(e => e.remove());
-  W = Math.max(180, Math.min(300, innerWidth - 48, innerHeight * .33));
+  const H = document.body.clientHeight, need = (L ? L.h : 8) * 36 + 24;
+  W = Math.max(170, Math.min(300, innerWidth - 48, H - 190 - need));
   w.style.width = w.style.height = W + 'px'; w.style.setProperty('--b', Math.min(64, W / 4.2) + 'px');
   const cvs = w.querySelector('canvas'), d = devicePixelRatio || 1; cvs.width = cvs.height = W * d; cvs.getContext('2d').setTransform(d, 0, 0, d, 0, 0);
   pos = letters.map((ch, i) => {
@@ -263,7 +264,11 @@ function showBackup() {
   $('back').onclick = showMenu;
 }
 $('menub').onclick = showMenu;
-addEventListener('resize', () => { if (!sel.length) { buildWheel(); fit(); } });
+let lastH = 0;
+const relayout = () => { if (sel.length || document.body.clientHeight === lastH) return; lastH = document.body.clientHeight; buildWheel(); fit(); };
+addEventListener('resize', relayout);
+new ResizeObserver(relayout).observe(document.body);
+new ResizeObserver(fit).observe($('gridbox'));
 load();
 </script>
 </body>
