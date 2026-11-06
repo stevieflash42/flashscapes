@@ -20,9 +20,9 @@ header{display:flex;justify-content:space-between;width:100%;max-width:480px;pad
 #wheel canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .l{position:absolute;width:var(--b);height:var(--b);margin:calc(var(--b)/-2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:calc(var(--b)*.55);font-weight:700;color:var(--wl);cursor:pointer}
 .l.sel{background:var(--sel);color:var(--selink)}
-#bar{display:flex;gap:10px;margin:6px 0 12px}
+#bar{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:6px 8px 12px}#bar button{padding:0 14px;font-size:14px}
 button{background:var(--btn);color:var(--btnink);border:0;border-radius:24px;min-height:44px;padding:0 18px;font-weight:700;font-size:15px;cursor:pointer}
-#def{position:fixed;inset:0;background:#000c;display:none;align-items:center;justify-content:center;padding:24px;z-index:2}#def>div{background:var(--wheel);color:var(--wl);border-radius:14px;padding:18px 20px;max-width:420px;max-height:80vh;overflow:auto;font-size:15px;line-height:1.4;-webkit-user-select:none}#def h3{margin:0 0 6px;font-size:22px}#def i{opacity:.7}#def p{margin:6px 0}#def a{color:inherit}.c.on{cursor:pointer}
+#def,#hist{position:fixed;inset:0;background:#000c;display:none;align-items:center;justify-content:center;padding:24px;z-index:2}#def{z-index:4}#def>div,#hist>div{background:var(--wheel);color:var(--wl);border-radius:14px;padding:18px 20px;max-width:420px;max-height:80vh;overflow:auto;font-size:15px;line-height:1.4;-webkit-user-select:none}#def h3{margin:0 0 6px;font-size:22px}#def i{opacity:.7}#def p{margin:6px 0}#def a{color:inherit}.c.on{cursor:pointer}#hist{display:none}#hist h3{font-size:16px;margin:12px 0 4px}.chip{display:inline-block;margin:3px;padding:6px 12px;border-radius:16px;background:var(--btn);color:var(--btnink);cursor:pointer;font-weight:600;border:1px solid #8884}.chip.b{border-style:dashed}
 #win{position:fixed;inset:0;background:#000c;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;font-size:28px;font-weight:700}
 </style>
 </head>
@@ -32,9 +32,10 @@ button{background:var(--btn);color:var(--btnink);border:0;border-radius:24px;min
 <div id="preview"></div>
 <div id="msg"></div>
 <div id="wheel"><canvas></canvas></div>
-<div id="bar"><button id="shuf">Shuffle</button><button id="hint">Hint (10🪙)</button><button id="reset">Reset</button></div>
+<div id="bar"><button id="shuf">Shuffle</button><button id="hint">Hint (10🪙)</button><button id="histb">Words</button><button id="anim"></button><button id="reset">Reset</button></div>
+<div id="hist"><div></div></div>
 <div id="def"><div></div></div>
-<div id="win"><div>Level complete!</div><button id="next">Next level</button></div>
+<div id="win"><div>Level complete!</div><button id="winhist">Words</button><button id="next">Next level</button></div>
 <script src="levels.js"></script>
 <script>
 addEventListener('contextmenu', e => e.preventDefault());
@@ -42,7 +43,8 @@ addEventListener('selectstart', e => e.preventDefault());
 const $ = id => document.getElementById(id);
 let save = { lv: 0, coins: 20 };
 try { save = { ...save, ...JSON.parse(localStorage.getItem('flashscapes')) }; } catch { }
-save.found ||= []; save.bonus ||= []; save.hints ||= [];
+save.found ||= []; save.bonus ||= []; save.hints ||= []; save.hist ||= [];
+const animOn = () => save.anim ?? !matchMedia('(prefers-reduced-motion: reduce)').matches;
 let W, done, L, cells, found, bonusFound, sel = [], letters, pos;
 const persist = () => { try { localStorage.setItem('flashscapes', JSON.stringify(save)); } catch { } };
 
@@ -70,6 +72,7 @@ function fly(m, idxs) {
   for (let i = 0; i < w.length; i++) {
     const k = (r0 + (v ? i : 0)) + ',' + (c0 + (v ? 0 : i)), c = snap[k];
     if (c.d.classList.contains('on')) continue;
+    if (!animOn()) { show(k); continue; }
     const t = c.d.getBoundingClientRect(), s = pos[idxs[i]].e.getBoundingClientRect(), f = document.createElement('div');
     f.className = 'c on';
     f.textContent = w[i].toUpperCase();
@@ -163,24 +166,37 @@ async function lookup(w) {
   }
   return defs[w];
 }
-$('grid').addEventListener('click', async (ev) => {
-  const i = [...$('grid').children].indexOf(ev.target);
-  if (i < 0) return;
-  const q = cells[Math.floor(i / L.w) + ',' + (i % L.w)], ws = (q.words || []).filter((w) => found.has(w));
-  if (!ws.length) return;
+async function showDef(ws) {
   const box = $('def'), body = box.firstElementChild; box.style.display = 'flex';
   body.innerHTML = ws.map((w) => `<h3>${w}</h3><p>…</p>`).join('');
   body.innerHTML = (await Promise.all(ws.map(async (w) => `<h3>${w}</h3>${await lookup(w)}`))).join('');
+}
+$('grid').addEventListener('click', (ev) => {
+  const i = [...$('grid').children].indexOf(ev.target);
+  if (i < 0) return;
+  const ws = (cells[Math.floor(i / L.w) + ',' + (i % L.w)].words || []).filter((w) => found.has(w));
+  if (ws.length) showDef(ws);
 });
+function showHist() {
+  const groups = [...(done || !(found.size + bonusFound.size) ? [] : [{ lv: save.lv + 1, w: [...found], b: [...bonusFound], cur: 1 }]), ...save.hist];
+  const chips = (a, c) => a.map((w) => `<span class="chip ${c}" data-w="${w}">${w}</span>`).join('');
+  $('hist').firstElementChild.innerHTML = groups.length ? groups.map((g) => `<h3>Level ${g.lv}${g.cur ? ' (current)' : ''}</h3>${chips(g.w, '')}${chips(g.b, 'b')}`).join('') + '<p><i>Dashed = bonus words. Tap a word for its definition.</i></p>' : '<p>No words yet.</p>';
+  $('hist').style.display = 'flex';
+}
+$('hist').onclick = (ev) => { const w = ev.target.dataset.w; if (w) showDef([w]); else $('hist').style.display = 'none'; };
+$('histb').onclick = $('winhist').onclick = showHist;
+const animLabel = () => $('anim').textContent = 'Motion: ' + (animOn() ? 'On' : 'Off');
+$('anim').onclick = () => { save.anim = !animOn(); persist(); animLabel(); };
+animLabel();
 $('def').onclick = () => $('def').style.display = 'none';
 function flash(t) { $('msg').textContent = t; }
-function win() { if (done) return; done = true; save.lv++; save.coins += 5; save.found = []; save.bonus = []; save.hints = []; persist(); stats(); setTimeout(() => $('win').style.display = 'flex', 500); }
+function win() { if (done) return; done = true; save.hist.unshift({ lv: save.lv + 1, w: L.p.map((q) => q[0]), b: [...bonusFound] }); save.hist.length = Math.min(save.hist.length, 5); save.lv++; save.coins += 5; save.found = []; save.bonus = []; save.hints = []; persist(); stats(); setTimeout(() => $('win').style.display = 'flex', 500); }
 
 $('shuf').onclick = () => {
   const perm = letters.map((_, i) => i), old = pos.map(p => ({ x: p.x, y: p.y }));
   for (let i = perm.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [perm[i], perm[j]] = [perm[j], perm[i]]; }
   letters = perm.map(i => letters[i]); buildWheel();
-  pos.forEach((p, j) => p.e.animate([{ transform: `translate(${old[perm[j]].x - p.x}px,${old[perm[j]].y - p.y}px)` }, { transform: 'none' }], { duration: 450, easing: 'ease-in-out' }));
+  if (animOn()) pos.forEach((p, j) => p.e.animate([{ transform: `translate(${old[perm[j]].x - p.x}px,${old[perm[j]].y - p.y}px)` }, { transform: 'none' }], { duration: 250, easing: 'ease-in-out' }));
 };
 $('hint').onclick = () => {
   const open = Object.keys(cells).filter(k => cells[k].ch && !cells[k].d.classList.contains('on'));
