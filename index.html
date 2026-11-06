@@ -22,6 +22,7 @@ header{display:flex;justify-content:space-between;width:100%;max-width:480px;pad
 .l.sel{background:var(--sel);color:var(--selink)}
 #bar{display:flex;gap:10px;margin:6px 0 12px}
 button{background:var(--btn);color:var(--btnink);border:0;border-radius:24px;min-height:44px;padding:0 18px;font-weight:700;font-size:15px;cursor:pointer}
+#def{position:fixed;inset:0;background:#000c;display:none;align-items:center;justify-content:center;padding:24px;z-index:2}#def>div{background:var(--wheel);color:var(--wl);border-radius:14px;padding:18px 20px;max-width:420px;max-height:80vh;overflow:auto;font-size:15px;line-height:1.4;-webkit-user-select:none}#def h3{margin:0 0 6px;font-size:22px}#def i{opacity:.7}#def p{margin:6px 0}#def a{color:inherit}.c.on{cursor:pointer}
 #win{position:fixed;inset:0;background:#000c;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;font-size:28px;font-weight:700}
 </style>
 </head>
@@ -32,6 +33,7 @@ button{background:var(--btn);color:var(--btnink);border:0;border-radius:24px;min
 <div id="msg"></div>
 <div id="wheel"><canvas></canvas></div>
 <div id="bar"><button id="shuf">Shuffle</button><button id="hint">Hint (10🪙)</button><button id="reset">Reset</button></div>
+<div id="def"><div></div></div>
 <div id="win"><div>Level complete!</div><button id="next">Next level</button></div>
 <script src="levels.js"></script>
 <script>
@@ -55,7 +57,7 @@ function load() {
   for (let r = 0; r < L.h; r++) for (let c = 0; c < L.w; c++) {
     const d = document.createElement('div'); d.className = 'c'; g.appendChild(d); cells[r + ',' + c] = { d, ch: null };
   }
-  for (const [w, r, c, v] of L.p) for (let i = 0; i < w.length; i++) cells[(r + (v ? i : 0)) + ',' + (c + (v ? 0 : i))].ch = w[i];
+  for (const [w, r, c, v] of L.p) for (let i = 0; i < w.length; i++) { const q = cells[(r + (v ? i : 0)) + ',' + (c + (v ? 0 : i))]; q.ch = w[i]; (q.words ||= []).push(w); }
   for (const k in cells) if (!cells[k].ch) cells[k].d.style.visibility = 'hidden';
   for (const w of save.found) { const m = L.p.find(p => p[0] === w); if (m) { found.add(w); reveal(m); } }
   save.bonus.forEach(w => bonusFound.add(w));
@@ -124,6 +126,23 @@ function submit(w) {
   } else flash(w.length < 3 ? 'Too short' : 'Not a word');
 }
 function fitsWheel(w) { const c = {}; for (const ch of L.l) c[ch] = (c[ch] || 0) + 1; for (const ch of w) if (!c[ch]--) return false; return true; }
+const defs = {};
+async function lookup(w) {
+  if (!defs[w]) {
+    defs[w] = fetch('https://api.dictionaryapi.dev/v2/entries/en/' + w).then((r) => r.ok ? r.json() : Promise.reject()).then((j) => j[0].meanings.slice(0, 3).map((m) => `<p><i>${m.partOfSpeech}</i> ${m.definitions[0].definition}</p>`).join('')).catch(() => { delete defs[w]; return `<p>No definition found. <a href="https://en.wiktionary.org/wiki/${w}" target="_blank" rel="noopener">Wiktionary</a></p>`; });
+  }
+  return defs[w];
+}
+$('grid').addEventListener('click', async (ev) => {
+  const i = [...$('grid').children].indexOf(ev.target);
+  if (i < 0) return;
+  const q = cells[Math.floor(i / L.w) + ',' + (i % L.w)], ws = (q.words || []).filter((w) => found.has(w));
+  if (!ws.length) return;
+  const box = $('def'), body = box.firstElementChild; box.style.display = 'flex';
+  body.innerHTML = ws.map((w) => `<h3>${w}</h3><p>…</p>`).join('');
+  body.innerHTML = (await Promise.all(ws.map(async (w) => `<h3>${w}</h3>${await lookup(w)}`))).join('');
+});
+$('def').onclick = () => $('def').style.display = 'none';
 function flash(t) { $('msg').textContent = t; }
 function win() { if (done) return; done = true; save.lv++; save.coins += 5; save.found = []; save.bonus = []; save.hints = []; persist(); stats(); setTimeout(() => $('win').style.display = 'flex', 500); }
 
