@@ -203,7 +203,7 @@ $('shuf').onclick = () => {
   const perm = letters.map((_, i) => i), old = pos.map(p => ({ x: p.x, y: p.y }));
   for (let i = perm.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [perm[i], perm[j]] = [perm[j], perm[i]]; }
   letters = perm.map(i => letters[i]); buildWheel();
-  if (animOn()) pos.forEach((p, j) => p.e.animate([{ transform: `translate(${old[perm[j]].x - p.x}px,${old[perm[j]].y - p.y}px)` }, { transform: 'none' }], { duration: 130, easing: 'ease-out' }));
+  if (animOn()) pos.forEach((p, j) => p.e.animate([{ transform: `translate(${old[perm[j]].x - p.x}px,${old[perm[j]].y - p.y}px)` }, { transform: 'none' }], { duration: 250, easing: 'ease-in-out' }));
 };
 $('hint').onclick = () => {
   const open = Object.keys(cells).filter(k => cells[k].ch && !cells[k].d.classList.contains('on'));
