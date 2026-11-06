@@ -36,8 +36,18 @@ button{background:var(--btn);color:var(--btnink);border:0;border-radius:24px;min
 <div id="hist"><div></div></div>
 <div id="def"><div></div></div>
 <div id="win"><div>Level complete!</div><button id="winhist">Words</button><button id="next">Next level</button></div>
-<script src="levels.js"></script>
+<script src="levels.js?v=__V__"></script>
 <script>
+const V = '__V__';
+async function checkUpdate() {
+  if (V.startsWith('__')) return;
+  try {
+    const { v } = await (await fetch('version.json?t=' + Date.now(), { cache: 'no-store' })).json();
+    if (v !== V && sessionStorage.getItem('upd') !== v) { sessionStorage.setItem('upd', v); location.replace(location.pathname + '?v=' + v); }
+  } catch { }
+}
+checkUpdate();
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); });
 addEventListener('contextmenu', e => e.preventDefault());
 addEventListener('selectstart', e => e.preventDefault());
 addEventListener('gesturestart', e => e.preventDefault());

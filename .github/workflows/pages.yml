@@ -11,7 +11,7 @@ jobs:
     environment: github-pages
     steps:
       - uses: actions/checkout@v4
-      - run: mkdir _site && cp index.html levels.js manifest.webmanifest icon-*.png _site/
+      - run: mkdir _site && cp index.html levels.js manifest.webmanifest icon-*.png _site/ && sed -i "s/__V__/$GITHUB_SHA/g" _site/index.html && echo "{\"v\":\"$GITHUB_SHA\"}" > _site/version.json
       - uses: actions/upload-pages-artifact@v3
         with: { path: _site }
       - uses: actions/deploy-pages@v4
