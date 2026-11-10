@@ -14,6 +14,7 @@ const strip = (w) => { const c = [], e = (x) => w.endsWith(x), n = w.length, d =
   if (e('ier') || e('iest')) c.push(w.replace(/i(er|est)$/, 'y')); if (e('ily')) c.push(w.slice(0, -3) + 'y');
   if (e('ly')) c.push(w.slice(0, -2)); if (e('ness')) c.push(w.slice(0, -4)); if (e('less')) c.push(w.slice(0, -4)); if (e('ful')) c.push(w.slice(0, -3)); if (e('ment')) c.push(w.slice(0, -4));
   return c.some((x) => x.length > 2 && lower.has(x)); };
+const isProper = (w) => PROPER.has(w) && !strip(w);
 const webList = new Set(fs.readFileSync(__dirname + '/freq.txt', 'utf8').split('\n').slice(0, 6000));
 // subtitle-list words (names, slang) only count if a dictionary stem backs them
 const solid = (w) => webList.has(w) || lower.has(w) || strip(w);
@@ -25,7 +26,7 @@ const everyday = new Set(fs.readFileSync(__dirname + '/freq.txt', 'utf8').split(
 for (const x of fs.readFileSync(__dirname + '/profanity.txt', 'utf8').split('\n')) { const w = x.trim().toLowerCase(); if (/^[a-z]{3,7}$/.test(w)) BLOCK.add(w); }
 ['cooze', 'coochie', 'spic', 'chink', 'gook', 'dyke', 'wetback', 'raghead', 'towelhead'].forEach((w) => BLOCK.add(w));
 const rank = new Map();
-const add = (words) => words.forEach((w) => { if (/^[a-z]{3,7}$/.test(w) && dict.has(w) && !BLOCK.has(w) && !ABBR.has(w) && !PROPER.has(w) && solid(w) && !rank.has(w)) rank.set(w, rank.size); });
+const add = (words) => words.forEach((w) => { if (/^[a-z]{3,7}$/.test(w) && dict.has(w) && !BLOCK.has(w) && !ABBR.has(w) && !isProper(w) && solid(w) && !rank.has(w)) rank.set(w, rank.size); });
 // interleave both frequency lists so rank ~ commonness in either
 const A = fs.readFileSync(__dirname + '/freq.txt', 'utf8').split('\n');
 const B = fs.readFileSync(__dirname + '/freq50k.txt', 'utf8').split('\n').map((l) => l.split(' ')[0]);
@@ -37,11 +38,13 @@ const cand = new Set(all.filter((w) => !CODES.has(w) || everyday.has(w)));
 const bases = (w) => /(ss|us|is)$/.test(w) ? [] : [w.endsWith('ies') && w.slice(0, -3) + 'y', w.endsWith('es') && w.slice(0, -2), w.endsWith('s') && w.slice(0, -1)].filter(Boolean);
 // bonus dictionary: the whole source dictionary (3-7 letters) minus profanity, proper nouns and bare language codes, plus a few modern words it lacks
 const MODERN = 'emoji emojis selfie selfies wifi vlog vlogs blog blogs email emails hashtag podcast podcasts tweet tweets meme memes google texting texted unfriend unfollow app apps website websites online offline login logout download upload'.split(' ');
-const okBonus = (w) => /^[a-z]{3,7}$/.test(w) && !BLOCK.has(w) && (!PROPER.has(w) || MODERN.includes(w)) && (!CODES.has(w) || everyday.has(w) || lower.has(w));
+// mild words are fine to accept as bonus words but never go in a grid
+const MILD = new Set('hell damn kill kills killed killer killing suck sucks sucked butt ass sex sexy nude naked gay lesbian crap piss pissed'.split(' '));
+const okBonus = (w) => /^[a-z]{3,7}$/.test(w) && (!BLOCK.has(w) || MILD.has(w)) && (!isProper(w) || MODERN.includes(w)) && (!CODES.has(w) || everyday.has(w) || lower.has(w));
 const bonusSet = new Set([...JSON.parse(fs.readFileSync(__dirname + '/dict.json', 'utf8')), ...all, ...MODERN].filter(okBonus));
 const broad = [...bonusSet].filter((w) => !rank.has(w));
 const DICTWORDS = [...bonusSet];
-const rare = new Set(broad.filter((w) => lower.has(w) && !ABBR.has(w) && (!CODES.has(w) || everyday.has(w))));
+const rare = new Set(broad.filter((w) => lower.has(w) && !BLOCK.has(w) && !ABBR.has(w) && (!CODES.has(w) || everyday.has(w))));
 const pool0 = new Set([...cand, ...rare]);
 const GRID = new Set([...pool0].filter((w) => !bases(w).some((b) => b.length >= 3 && pool0.has(b))));
 console.log('grid vocab', GRID.size, '(common', [...GRID].filter((w) => !rare.has(w)).length + ')');
