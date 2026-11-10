@@ -22,6 +22,8 @@ const ABBR = new Set('abs ads aka alt amp app asp ave bio biz bod bot cam cis ci
 // ISO 639-2 / 639-3 language codes: kept out of the grid unless clearly everyday English
 const CODES = new Set(fs.readFileSync(__dirname + '/iso639-2.csv', 'utf8').match(/"[a-z]{3}"/g).map((x) => x.slice(1, 4)));
 const everyday = new Set(fs.readFileSync(__dirname + '/freq.txt', 'utf8').split('\n').slice(0, 3000));
+for (const x of fs.readFileSync(__dirname + '/profanity.txt', 'utf8').split('\n')) { const w = x.trim().toLowerCase(); if (/^[a-z]{3,7}$/.test(w)) BLOCK.add(w); }
+['cooze', 'coochie', 'spic', 'chink', 'gook', 'dyke', 'wetback', 'raghead', 'towelhead'].forEach((w) => BLOCK.add(w));
 const rank = new Map();
 const add = (words) => words.forEach((w) => { if (/^[a-z]{3,7}$/.test(w) && dict.has(w) && !BLOCK.has(w) && !ABBR.has(w) && !PROPER.has(w) && solid(w) && !rank.has(w)) rank.set(w, rank.size); });
 // interleave both frequency lists so rank ~ commonness in either
@@ -33,10 +35,13 @@ const all = [...rank.keys()];
 const cand = new Set(all.filter((w) => !CODES.has(w) || everyday.has(w)));
 // plural/-s forms stay valid as bonus words (DICT) but never go in the grid when their singular is a grid candidate
 const bases = (w) => /(ss|us|is)$/.test(w) ? [] : [w.endsWith('ies') && w.slice(0, -3) + 'y', w.endsWith('es') && w.slice(0, -2), w.endsWith('s') && w.slice(0, -1)].filter(Boolean);
-// bonus dictionary: everything above plus any full-dictionary word the spell-check data backs (not names, abbreviations or codes)
-const broad = JSON.parse(fs.readFileSync(__dirname + '/dict.json', 'utf8')).filter((w) => /^[a-z]{3,7}$/.test(w) && !rank.has(w) && !BLOCK.has(w) && !ABBR.has(w) && !PROPER.has(w) && (lower.has(w) || strip(w)));
-const DICTWORDS = [...all.filter((w) => !CODES.has(w) || everyday.has(w) || lower.has(w)), ...broad];
-const rare = new Set(broad.filter((w) => lower.has(w)));
+// bonus dictionary: the whole source dictionary (3-7 letters) minus profanity, proper nouns and bare language codes, plus a few modern words it lacks
+const MODERN = 'emoji emojis selfie selfies wifi vlog vlogs blog blogs email emails hashtag podcast podcasts tweet tweets meme memes google texting texted unfriend unfollow app apps website websites online offline login logout download upload'.split(' ');
+const okBonus = (w) => /^[a-z]{3,7}$/.test(w) && !BLOCK.has(w) && (!PROPER.has(w) || MODERN.includes(w)) && (!CODES.has(w) || everyday.has(w) || lower.has(w));
+const bonusSet = new Set([...JSON.parse(fs.readFileSync(__dirname + '/dict.json', 'utf8')), ...all, ...MODERN].filter(okBonus));
+const broad = [...bonusSet].filter((w) => !rank.has(w));
+const DICTWORDS = [...bonusSet];
+const rare = new Set(broad.filter((w) => lower.has(w) && !ABBR.has(w) && (!CODES.has(w) || everyday.has(w))));
 const pool0 = new Set([...cand, ...rare]);
 const GRID = new Set([...pool0].filter((w) => !bases(w).some((b) => b.length >= 3 && pool0.has(b))));
 console.log('grid vocab', GRID.size, '(common', [...GRID].filter((w) => !rare.has(w)).length + ')');
