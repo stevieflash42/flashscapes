@@ -6,16 +6,22 @@ const BLOCK = new Set('ass arse bitch bastard cock cum cunt damn dick fag fuck h
 const stems = fs.readFileSync(__dirname + '/en.dic', 'utf8').split('\n').slice(1).map((l) => l.split('/')[0]);
 const lower = new Set(stems.filter((w) => w === w.toLowerCase()));
 const PROPER = new Set(stems.filter((w) => /^[A-Z]/.test(w)).map((w) => w.toLowerCase()).filter((w) => !lower.has(w)));
-const strip = (w) => { const c = [], e = (x) => w.endsWith(x), d = w[w.length - 2] === w[w.length - 3];
+const strip = (w) => { const c = [], e = (x) => w.endsWith(x), n = w.length, d = w[n - 2] === w[n - 3];
   if (e('s')) c.push(w.slice(0, -1)); if (e('es')) c.push(w.slice(0, -2)); if (e('ies')) c.push(w.slice(0, -3) + 'y');
-  if (e('ed')) c.push(w.slice(0, -2), w.slice(0, -1), d ? w.slice(0, -3) : ''); if (e('ing')) c.push(w.slice(0, -3), w.slice(0, -3) + 'e', w[w.length - 4] === w[w.length - 5] ? w.slice(0, -4) : '');
-  if (e('er')) c.push(w.slice(0, -2), w.slice(0, -1)); if (e('est')) c.push(w.slice(0, -3), w.slice(0, -2)); if (e('ly')) c.push(w.slice(0, -2));
+  if (e('ed')) c.push(w.slice(0, -2), w.slice(0, -1), d ? w.slice(0, -3) : ''); if (e('ied')) c.push(w.slice(0, -3) + 'y');
+  if (e('ing')) c.push(w.slice(0, -3), w.slice(0, -3) + 'e', w[n - 4] === w[n - 5] ? w.slice(0, -4) : '');
+  if (e('er')) c.push(w.slice(0, -2), w.slice(0, -1), d ? w.slice(0, -3) : ''); if (e('est')) c.push(w.slice(0, -3), w.slice(0, -2));
+  if (e('ier') || e('iest')) c.push(w.replace(/i(er|est)$/, 'y')); if (e('ily')) c.push(w.slice(0, -3) + 'y');
+  if (e('ly')) c.push(w.slice(0, -2)); if (e('ness')) c.push(w.slice(0, -4)); if (e('less')) c.push(w.slice(0, -4)); if (e('ful')) c.push(w.slice(0, -3)); if (e('ment')) c.push(w.slice(0, -4));
   return c.some((x) => x.length > 2 && lower.has(x)); };
 const webList = new Set(fs.readFileSync(__dirname + '/freq.txt', 'utf8').split('\n').slice(0, 6000));
 // subtitle-list words (names, slang) only count if a dictionary stem backs them
 const solid = (w) => webList.has(w) || lower.has(w) || strip(w);
 // abbreviations, acronyms, clippings, interjections, informal contractions, stray proper nouns
 const ABBR = new Set('abs ads aka alt amp app asp ave bio biz bod bot cam cis cit col con cor cos def deg dev devel dis div doc emf eff gov guv hmm hon jun lac las lat lib mac mag max med meh mic mil mun pol pre rec ref reg rem rep res rev rho sec shh sim soc sri sur syn tel til twp vac var veg vol brr psst pix sou mam info pic promo prof stat tech spec tho thru gonna wanna gotta kinda sorta gimme dunno yeah nope yep yup yuk yow nah bah pah rah duh huh aah ooh oho ugh eek costa jews latinas shemale bukkake inkjet telecom schmuck gangsta wouldst wog wop gyp'.split(' '));
+// ISO 639-2 / 639-3 language codes: kept out of the grid unless clearly everyday English
+const CODES = new Set(fs.readFileSync(__dirname + '/iso639-2.csv', 'utf8').match(/"[a-z]{3}"/g).map((x) => x.slice(1, 4)));
+const everyday = new Set(fs.readFileSync(__dirname + '/freq.txt', 'utf8').split('\n').slice(0, 3000));
 const rank = new Map();
 const add = (words) => words.forEach((w) => { if (/^[a-z]{3,7}$/.test(w) && dict.has(w) && !BLOCK.has(w) && !ABBR.has(w) && !PROPER.has(w) && solid(w) && !rank.has(w)) rank.set(w, rank.size); });
 // interleave both frequency lists so rank ~ commonness in either
@@ -24,11 +30,17 @@ const B = fs.readFileSync(__dirname + '/freq50k.txt', 'utf8').split('\n').map((l
 const merged = []; for (let i = 0; i < Math.max(A.length, B.length); i++) { if (i < A.length) merged.push(A[i]); if (i < B.length) merged.push(B[i]); }
 add(merged);
 const all = [...rank.keys()];
-const cand = new Set(all.slice(0, 16000));
+const cand = new Set(all.filter((w) => !CODES.has(w) || everyday.has(w)));
 // plural/-s forms stay valid as bonus words (DICT) but never go in the grid when their singular is a grid candidate
 const bases = (w) => /(ss|us|is)$/.test(w) ? [] : [w.endsWith('ies') && w.slice(0, -3) + 'y', w.endsWith('es') && w.slice(0, -2), w.endsWith('s') && w.slice(0, -1)].filter(Boolean);
-const GRID = new Set([...cand].filter((w) => !bases(w).some((b) => b.length >= 3 && cand.has(b))));
-console.log('grid vocab', GRID.size, 'of', cand.size);
+// bonus dictionary: everything above plus any full-dictionary word the spell-check data backs (not names, abbreviations or codes)
+const broad = JSON.parse(fs.readFileSync(__dirname + '/dict.json', 'utf8')).filter((w) => /^[a-z]{3,7}$/.test(w) && !rank.has(w) && !BLOCK.has(w) && !ABBR.has(w) && !PROPER.has(w) && (lower.has(w) || strip(w)));
+const DICTWORDS = [...all.filter((w) => !CODES.has(w) || everyday.has(w) || lower.has(w)), ...broad];
+const rare = new Set(broad.filter((w) => lower.has(w)));
+const pool0 = new Set([...cand, ...rare]);
+const GRID = new Set([...pool0].filter((w) => !bases(w).some((b) => b.length >= 3 && pool0.has(b))));
+console.log('grid vocab', GRID.size, '(common', [...GRID].filter((w) => !rare.has(w)).length + ')');
+console.log('dictionary', DICTWORDS.length, '(common', all.length, '+ broad', broad.length + ')');
 const key = (s) => [...s].sort().join('');
 const cnt = (w) => { const c = {}; for (const ch of w) c[ch] = (c[ch] || 0) + 1; return c; };
 const fits = (w, c) => { const u = cnt(w); return Object.keys(u).every((k) => u[k] <= (c[k] || 0)); };
@@ -76,31 +88,39 @@ function layout(words) {
 
 // seeds: one per distinct letter multiset, must itself be a grid word
 const seeds = {};
-for (const w of GRID) { const n = w.length; ((seeds[n] ||= new Map()).has(key(w)) ? 0 : seeds[n].set(key(w), w)); }
+for (const w of GRID) { if (rare.has(w)) continue; const n = w.length; ((seeds[n] ||= new Map()).has(key(w)) ? 0 : seeds[n].set(key(w), w)); }
 const vec = (w) => { const v = new Uint8Array(26); for (const ch of w) v[ch.charCodeAt(0) - 97]++; return v; };
 const GW = [...GRID].map((w) => [w, vec(w)]);
 const poolOf = (s) => { const c = vec(s); return GW.filter(([, v]) => { for (let i = 0; i < 26; i++) if (v[i] > c[i]) return false; return true; }).map((x) => x[0]); };
 const pools = new Map(); // lazy
 const getPool = (s) => pools.get(s) || (pools.set(s, poolOf(s)), pools.get(s));
 
-const MIN = { 3: 3, 4: 5, 5: 6, 6: 7, 7: 7 }, K = { 3: 4, 4: 6, 5: 8, 6: 10, 7: 12 };
+const MIN = { 3: 3, 4: 6, 5: 7, 6: 8, 7: 8 }, K = { 3: 4, 4: 8, 5: 10, 6: 11, 7: 12 };
 const rej = {}, TOTAL = 6000, usage = new Map(), last = new Map(), levels = [];
+const CAP3 = { 3: 99, 4: 2, 5: 1, 6: 1, 7: 0 };
+const choose = (pool, s, i, n, count, noise) => {
+  const sorted = pool.filter((w) => w !== s).map((w) => [w, pen(w, i) + (w.length === 3 ? 300 : 0) + rnd() * noise]).sort((a, b) => a[1] - b[1]).map((x) => x[0]);
+  const out = []; let short = s.length === 3 ? 1 : 0;
+  for (const w of sorted) { if (out.length >= count - 1) break; if (w.length === 3 && short >= CAP3[n]) continue; if (w.length === 3) short++; out.push(w); }
+  for (const w of sorted) { if (out.length >= MIN[n] - 1) break; if (!out.includes(w)) out.push(w); }
+  return out;
+};
 const COOL = 400; // a word isn't repeated within this many levels while alternatives exist
-const pen = (w, i) => (usage.get(w) || 0) * 100 + (i - (last.get(w) ?? -1e9) < COOL ? 1000 : 0);
+const pen = (w, i) => (rare.has(w) ? 150 : 0) + (usage.get(w) || 0) * 100 + (i - (last.get(w) ?? -1e9) < COOL ? 1000 : 0);
 const avail = { 3: [...seeds[3].values()], 4: [...seeds[4].values()], 5: [...seeds[5].values()], 6: [...seeds[6].values()], 7: [...seeds[7].values()] };
 console.log('seeds', Object.fromEntries(Object.entries(avail).map(([n, a]) => [n, a.length])));
 
 for (let i = 0; i < TOTAL; i++) {
-  const mean = 3 + 4 * (i / TOTAL) ** 0.9;
+  const mean = 3 + 4 * Math.min(1, i / 3000) ** 0.5;
   const ns = [3, 4, 5, 6, 7].filter((n) => avail[n].length), wt = ns.map((n) => Math.exp(-((n - mean) ** 2) / 1.2));
   if (!ns.length) { console.log('exhausted at level', i); break; }
   let t = rnd() * wt.reduce((a, b) => a + b, 0), n = ns[0];
   for (let j = 0; j < ns.length; j++) { t -= wt[j]; if (t <= 0) { n = ns[j]; break; } }
   let bestCost = Infinity, bs = null;
-  for (let s = 0; s < 25; s++) {
+  for (let s = 0; s < 40; s++) {
     const idx = Math.floor(rnd() * avail[n].length), pool = getPool(avail[n][idx]);
     if (pool.length < MIN[n]) { rej[n + 'pool'] = (rej[n + 'pool'] || 0) + 1; avail[n].splice(idx, 1); if (!avail[n].length) break; s--; continue; }
-    const cost = pool.map((w) => pen(w, i)).sort((a, b) => a - b).slice(0, K[n]).reduce((a, b) => a + b, 0);
+    const cost = [s, ...choose(pool, s, i, n, K[n], 0)].reduce((a, w) => a + pen(w, i) + (w.length === 3 ? 300 : 0), 0);
     if (cost < bestCost) { bestCost = cost; bs = avail[n][idx]; }
   }
   if (!bs) { i--; continue; }
@@ -108,7 +128,7 @@ for (let i = 0; i < TOTAL; i++) {
   const s = bs, pool = getPool(s);
   let best = null;
   for (let t2 = 0; t2 < 40; t2++) {
-    const rest = pool.filter((w) => w !== s).map((w) => [w, pen(w, i) + rnd() * 30]).sort((a, b) => a[1] - b[1]).slice(0, MIN[n] + Math.floor(rnd() * (K[n] - MIN[n] + 1)) - 1).map((x) => x[0]);
+    const rest = choose(pool, s, i, n, MIN[n] + Math.floor(rnd() * (K[n] - MIN[n] + 1)), 30);
     const ws = [s, ...rest].sort((a, b) => b.length - a.length);
     const l = layout(ws);
     if (l.h > 10 || l.w > 9 || l.placed.length < MIN[n]) continue;
@@ -120,7 +140,7 @@ for (let i = 0; i < TOTAL; i++) {
   levels.push({ s, ...best });
 }
 const enc = (l) => l.s + ':' + l.placed.map((p) => p.w + p.r + p.c + p.d).join(',');
-fs.writeFileSync(__dirname + '/../levels.js', 'const LEVELS=' + JSON.stringify(levels.map(enc)) + ';\nconst DICT=new Set("' + all.join(' ') + '".split(" "));');
+fs.writeFileSync(__dirname + '/../levels.js', 'const LEVELS=' + JSON.stringify(levels.map(enc)) + ';\nconst DICT=new Set("' + DICTWORDS.join(' ') + '".split(" "));');
 const u = [...usage.values()], tot = u.reduce((a, b) => a + b, 0);
 console.log(levels.length, 'levels;', usage.size, 'distinct words of', tot, 'placements; max reuse', Math.max(...u), '; avg', (tot / usage.size).toFixed(2));
 console.log(rej);
